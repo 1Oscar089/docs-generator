@@ -5,25 +5,67 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Generador de documentos</title>
+    <style>
+        body{
+            padding: 1%;
+
+        }
+        h1{
+            color: rgb(41, 194, 255);
+            text-transform: uppercase;
+        }
+        #buscador{
+            width: 25rem;
+            height: 2rem;
+            border: 0.1rem solid blue;
+            border-radius: 0.5rem;
+            outline: none !important;
+        }
+        #buscador:focus{
+            border-color: red;
+        }
+        #temas{
+            display: flex;
+            flex-direction: row;
+            gap: 20px;
+        }
+        .tema{
+            background-color: aquamarine;
+            width: 31%;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            border-radius: 2rem;
+            
+        }
+        .tema span{
+            font-size: 50px;
+            margin: 0, auto, 0, auto;
+        }
+    </style>
 </head>
 
 <body>
     <h1>Generador de documentos de todo tipo</h1>
-    <input type="text" id="buscador">
+    <input type="text" id="buscador"><br><br>
     <div id="temas">
 
     </div>
 
     <script>
         let temas = [
-            {titulo: "Autoliquidación", descripcion: "Genera el pdf de autoliquidación administrativa dando los datos solicitados en el formulario.", icono: "", link: 'pages/liquidacion.html'},
+            {titulo: "Autoliquidación", descripcion: "Genera el pdf de autoliquidación administrativa dando los datos solicitados en el formulario.", icono: "🧾", link: 'pages/liquidacion.html'},
+            {titulo: "Compras", descripcion: "Genera el pdf de Solicitud de cotización, Cotización, Plan de compras, Orden de compra y Acta de recepción.", icono: '📑', link: 'pages/compras.html'},
         ];
+        temas.sort((a, b) => a.titulo.localeCompare(b.titulo));
         function crearTarjetas(lista) {
             let tarjetas = document.getElementById('temas');
             lista.forEach((tema) => {
                 let tarjeta = document.createElement('div');
                 tarjeta.className = 'tema';
-                tarjeta.style.cursor = 'pointer';
+
                 tarjeta.addEventListener('click', function () {
                     window.location.href = tema.link;
                 });
@@ -38,11 +80,28 @@
                 tarjeta.append(descripcion);
                 tarjetas.append(tarjeta);
             });
+            /*let estilo = document.createElement('style');
+
+            estilo.textContent = `
+                .tema{
+                    background-color: aquamarine;
+                }
+            `;
+            document.head.appendChild(estilo);*/
         };
         document.addEventListener("DOMContentLoaded", () => {
             crearTarjetas(temas);
         });
     </script>
+    <style>
+        .tarjetas{
+            display: flex;
+
+        }
+        .tarjeta{
+            background-color: aquamarine;
+        }
+    </style>
 </body>
 
 </html>
