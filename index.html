@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de documentos</title>
+</head>
+<body>
+    <h1>Generador de documentos de todo tipo</h1>
+    <input type="text" id="buscador">
+    <div id="temas">
+
+    </div>
+
+    <script>
+        let temas = [
+            {titulo: "Autoliquidación", descripcion: "Genera el pdf de autoliquidación administrativa dando los datos solicitados en el formulario.", icono: ""},
+        ];
+        function crearTarjetas(lista){
+            let tarjetas = document.getElementById('temas');
+            lista.forEach((tema) => {
+                let tarjeta = document.createElement('div');
+                tarjeta.className = 'tema';
+                let titulo = document.createElement('h3');
+                titulo.textContent = tema.titulo;
+                let icono = document.createElement('span');
+                icono.textContent = tema.icono;
+                let descripcion = document.createElement('p');
+                descripcion.textContent = tema.descripcion;
+                tarjeta.append(titulo);
+                tarjeta.append(icono);
+                tarjeta.append(descripcion);
+                tarjetas.append(tarjeta);
+            });
+        };
+        document.addEventListener("DOMContentLoaded", () => {
+            crearTarjetas(temas);
+        });
+    </script>
+</body>
+</html>
