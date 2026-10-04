@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Liquidación con Fuentes Locales</title>
+    
+    <!-- TUS DOS IMPORTACIONES EXACTAS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+</head>
+<body>
+
+    <h2>Generar Liquidación</h2>
+    <button onclick="iniciarGeneracionPDF()">Generar PDF</button>
+
+    <script>
+        // 1. EL "PUENTE": Descarga los .ttf de tu carpeta y los mete al sistema vfs_fonts
+        async function vincularFuenteLocal(nombreVirtual, rutaLocal) {
+            try {
+                const respuesta = await fetch(rutaLocal);
+                if (!respuesta.ok) throw new Error(`No se pudo encontrar el archivo: ${rutaLocal}`);
+                
+                const blob = await respuesta.blob();
+                
+                return new Promise((resolve) => {
+                    const lector = new FileReader();
+                    lector.onloadend = function () {
+                        // Extraemos la cadena base64 limpia que necesita pdfMake
+                        const base64Puro = lector.result.split(',')[1];
+                        
+                        // Guardamos la fuente en el objeto virtual sin romper las que ya existen (como Roboto)
+                        pdfMake.vfs[nombreVirtual] = base64Puro;
+                        resolve();
+                    };
+                    lector.readAsDataURL(blob);
+                });
+            } catch (error) {
+                console.error("Error cargando fuente:", error);
+            }
+        }
+
+        // 2. ORQUESTADOR: Carga tus archivos locales y luego dispara la creación del PDF
+        async function iniciarGeneracionPDF() {
+            // Inicializamos el objeto vfs si no existe
+            pdfMake.vfs = pdfMake.vfs || {}; 
+
+            // Registramos tus archivos de la carpeta fonts/
+            // Asegúrate de que las mayúsculas y minúsculas de los nombres sean idénticas a tus archivos reales
+            await vincularFuenteLocal('PinyonScript-Regular.ttf', '../fonts/PinyonScript-Regular.ttf');
+            await vincularFuenteLocal('TimesNewRoman-Regular.ttf', '../fonts/times.ttf');
+
+            // Una vez que todo está cargado en memoria, llamamos a la función constructora
+            generarPDF();
+        }
+
+        // 3. CONFIGURACIÓN Y DISEÑO DEL DOCUMENTO
+        function generarPDF() {
+            // Mapeamos los alias de pdfMake hacia los archivos virtuales que creamos arriba
+            pdfMake.fonts = {
+                // Roboto sigue funcionando porque viene pre-cargado desde tu segundo script CDN
+                Roboto: {
+                    normal: 'Roboto-Regular.ttf',
+                    bold: 'Roboto-Medium.ttf',
+                    italics: 'Roboto-Italic.ttf',
+                    bolditalics: 'Roboto-MediumItalic.ttf'
+                },
+                TimesNewRoman: {
+                    normal: 'TimesNewRoman-Regular.ttf',
+                    bold: 'TimesNewRoman-Regular.ttf',
+                    italics: 'TimesNewRoman-Regular.ttf', 
+                    bolditalics: 'TimesNewRoman-Regular.ttf'
+                },
+                PinyonScript: {
+                    normal: 'PinyonScript-Regular.ttf',
+                    bold: 'PinyonScript-Regular.ttf',
+                    italics: 'PinyonScript-Regular.ttf',
+                    bolditalics: 'PinyonScript-Regular.ttf'
+                }
+            };
+
+            const docDefinition = {
+                content: [
+                    { text: 'Liquidación de Sueldo', font: 'TimesNewRoman', fontSize: 10, bold: true },
+                    { text: 'Detalle cargado desde la carpeta local fonts/.', font: 'TimesNewRoman', fontSize: 11, marginTop: 5 },
+                    
+                    { text: 'Firma del Empleado:', font: 'Roboto', fontSize: 10, marginTop: 30, color: 'gray' },
+                    { text: 'Juan Pérez', font: 'PinyonScript', fontSize: 36, marginTop: 5 }
+                ],
+                defaultStyle: {
+                    font: 'TimesNewRoman' // Hacemos que Times New Roman sea la tipografía base
+                }
+            };
+
+            pdfMake.createPdf(docDefinition).download('liquidacion_local.pdf');
+        }
+    </script>
+</body>
+</html>
