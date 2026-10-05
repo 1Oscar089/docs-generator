@@ -1,63 +1,84 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <title>Liquidación con Fuentes Locales</title>
-    
-    <!-- TUS DOS IMPORTACIONES EXACTAS -->
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
 </head>
+
 <body>
 
     <h2>Generar Liquidación</h2>
-    <button onclick="iniciarGeneracionPDF()">Generar PDF</button>
+    <button id="btnGenerar" onclick="iniciarGeneracionPDF()">Generar PDF</button>
 
     <script>
-        // 1. EL "PUENTE": Descarga los .ttf de tu carpeta y los mete al sistema vfs_fonts
+        // Verificar que pdfmake cargó desde el CDN
+        if (typeof pdfMake === 'undefined') {
+            alert('pdfmake no se cargó. Revisa tu conexión a internet.');
+        }
+
+        // === 1. LOS PUENTES (FUNCIONES DE CONVERSIÓN) ===
+
         async function vincularFuenteLocal(nombreVirtual, rutaLocal) {
+            const respuesta = await fetch(rutaLocal);
+            if (!respuesta.ok) throw new Error(`No se encontró la fuente: ${rutaLocal}`);
+            const blob = await respuesta.blob();
+            return new Promise((resolve, reject) => {
+                const lector = new FileReader();
+                lector.onloadend = () => {
+                    pdfMake.vfs[nombreVirtual] = lector.result.split(',')[1]; // base64 puro
+                    resolve();
+                };
+                lector.onerror = reject;
+                lector.readAsDataURL(blob);
+            });
+        }
+
+        async function convertirImagenABase64(rutaLocal) {
+            const respuesta = await fetch(rutaLocal);
+            if (!respuesta.ok) throw new Error(`No se encontró la imagen: ${rutaLocal}`);
+            const blob = await respuesta.blob();
+            return new Promise((resolve, reject) => {
+                const lector = new FileReader();
+                lector.onloadend = () => resolve(lector.result); // DataURL completo (data:image/...)
+                lector.onerror = reject;
+                lector.readAsDataURL(blob);
+            });
+        }
+
+        // === 2. EL ORQUESTADOR PRINCIPAL ===
+        async function iniciarGeneracionPDF() {
+            const btn = document.getElementById('btnGenerar');
+            btn.disabled = true;
+            btn.textContent = 'Generando...';
+
             try {
-                const respuesta = await fetch(rutaLocal);
-                if (!respuesta.ok) throw new Error(`No se pudo encontrar el archivo: ${rutaLocal}`);
-                
-                const blob = await respuesta.blob();
-                
-                return new Promise((resolve) => {
-                    const lector = new FileReader();
-                    lector.onloadend = function () {
-                        // Extraemos la cadena base64 limpia que necesita pdfMake
-                        const base64Puro = lector.result.split(',')[1];
-                        
-                        // Guardamos la fuente en el objeto virtual sin romper las que ya existen (como Roboto)
-                        pdfMake.vfs[nombreVirtual] = base64Puro;
-                        resolve();
-                    };
-                    lector.readAsDataURL(blob);
-                });
+                pdfMake.vfs = pdfMake.vfs || {};
+
+                await vincularFuenteLocal('PinyonScript-Regular.ttf', '../fonts/PinyonScript-Regular.ttf');
+                await vincularFuenteLocal('TimesNewRoman-Regular.ttf', '../fonts/times.ttf');
+                const imagenBase64 = await convertirImagenABase64('../img/meducacion.jpeg');
+
+                generarPDF(imagenBase64);
+
             } catch (error) {
-                console.error("Error cargando fuente:", error);
+                console.error(error);
+                alert('Error al preparar el PDF: ' + error.message + '\n\n' +
+                    'Causas posibles:\n' +
+                    '1. Abriste el HTML con doble clic (file://). Debes usar un servidor local.\n' +
+                    '2. Las rutas ../fonts/ o ../img/ no coinciden con tus carpetas.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Generar PDF';
             }
         }
 
-        // 2. ORQUESTADOR: Carga tus archivos locales y luego dispara la creación del PDF
-        async function iniciarGeneracionPDF() {
-            // Inicializamos el objeto vfs si no existe
-            pdfMake.vfs = pdfMake.vfs || {}; 
-
-            // Registramos tus archivos de la carpeta fonts/
-            // Asegúrate de que las mayúsculas y minúsculas de los nombres sean idénticas a tus archivos reales
-            await vincularFuenteLocal('PinyonScript-Regular.ttf', '../fonts/PinyonScript-Regular.ttf');
-            await vincularFuenteLocal('TimesNewRoman-Regular.ttf', '../fonts/times.ttf');
-
-            // Una vez que todo está cargado en memoria, llamamos a la función constructora
-            generarPDF();
-        }
-
-        // 3. CONFIGURACIÓN Y DISEÑO DEL DOCUMENTO
-        function generarPDF() {
-            // Mapeamos los alias de pdfMake hacia los archivos virtuales que creamos arriba
+        // === 3. DISEÑO Y CONSTRUCCIÓN DEL PDF ===
+        function generarPDF(imagenBase64) {
             pdfMake.fonts = {
-                // Roboto sigue funcionando porque viene pre-cargado desde tu segundo script CDN
                 Roboto: {
                     normal: 'Roboto-Regular.ttf',
                     bold: 'Roboto-Medium.ttf',
@@ -67,7 +88,7 @@
                 TimesNewRoman: {
                     normal: 'TimesNewRoman-Regular.ttf',
                     bold: 'TimesNewRoman-Regular.ttf',
-                    italics: 'TimesNewRoman-Regular.ttf', 
+                    italics: 'TimesNewRoman-Regular.ttf',
                     bolditalics: 'TimesNewRoman-Regular.ttf'
                 },
                 PinyonScript: {
@@ -79,15 +100,55 @@
             };
 
             const docDefinition = {
+                pageMargins: [60, 80, 60, 60],
+                pageSize: 'LETTER',
+                header: {
+    table: {
+        widths: ['auto', '*'], // Mantienes las 2 columnas: Logo e Información
+        body: [
+            [
+                // COLUMNA 1: Tu logo (Sin usar rowSpan que rompe el header)
+                imagenBase64
+                    ? { image: imagenBase64, width: 125, margin: [15, 10, 0, 0] }
+                    : { text: '[Sin logo]', margin: [15, 15, 0, 0] },
+
+                // COLUMNA 2: Usamos un bloque contenedor para manejar el espacio vertical libremente
+                {
+                    stack: [
+                        // Renglón vacío superior (Equivale a tu fila anterior)
+                        { text: '', height: 10 }, 
+                        { text: '', height: 10 }, 
+                        
+                        // Tu texto oficial que ahora sí se va a renderizar al 100%
+                        {
+                            text: '\nDirección Departamental de Educación Chalatenango',
+                            font: 'PinyonScript',
+                            fontSize: 22,
+                            margin: [10, 15, 0, 0] // Ajusta el segundo número para bajar o subir el texto respecto al logo
+                        }
+                    ]
+                },
+            ]
+        ]
+    },
+    layout: 'noBorders' // Quita los bordes para mantener la estética limpia
+},
+
+
                 content: [
-                    { text: 'Liquidación de Sueldo', font: 'TimesNewRoman', fontSize: 10, bold: true },
-                    { text: 'Detalle cargado desde la carpeta local fonts/.', font: 'TimesNewRoman', fontSize: 11, marginTop: 5 },
-                    
-                    { text: 'Firma del Empleado:', font: 'Roboto', fontSize: 10, marginTop: 30, color: 'gray' },
-                    { text: 'Juan Pérez', font: 'PinyonScript', fontSize: 36, marginTop: 5 }
+                    { text: 'FORMULARIO DE AUTOLIQUIDACIÓN DE FONDOS TRANSFERIDOS POR EL MINED', fontSize: 11, decoration: 'underline',
+                        bold: true, margin: [0,0,0,3],
+                    },
+                    {
+                        text: 'PRESUPUESTO ESCOLAR', fontSize: 11, BOLD: true,margin: [0,0,0,3],
+                    },
+                    {
+                        text: 'Rubro: ___________________________________________________________ Año:___________'
+                    },
+
                 ],
                 defaultStyle: {
-                    font: 'TimesNewRoman' // Hacemos que Times New Roman sea la tipografía base
+                    
                 }
             };
 
@@ -95,4 +156,5 @@
         }
     </script>
 </body>
+
 </html>
