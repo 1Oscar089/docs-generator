@@ -7,22 +7,27 @@
     <title>Generador de documentos</title>
     <style>
     body{
-        padding: 1%;
+        padding: 2rem;
         font-family: sans-serif;
+        background: #d5d5d5;
     }
     h1{
         color: rgb(41, 194, 255);
         text-transform: uppercase;
     }
     #buscador{
-        width: 25rem;
-        height: 2rem;
+        width: 40rem;
+        height: 3rem;
         border: 0.1rem solid blue;
+        padding: 0 0.5rem;
+        font-size: 25px;
         border-radius: 0.5rem;
         outline: none !important;
+        background: #d5d5d5;
     }
     #buscador:focus{
         border-color: red;
+        background: #fff;
     }
     #temas{
         display: flex;
@@ -32,7 +37,7 @@
     }
     .tema{
         /* Modificado: El gradiente ahora es estático porque giraremos toda la tarjeta */
-        background: linear-gradient(0deg, #00afbb, #b367ff);
+        background: linear-gradient(135deg, #00afbb, #b367ff);
         
         /* Controla la velocidad de la animación del giro y tamaño */
         transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
