@@ -7,12 +7,87 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+    <style>
+        body{
+            margin: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        .form{
+            display: flex;
+            flex-direction: column;
+            gap: 0.7rem;
+            border: 3px solid black;
+            padding: 10px;
+            text-align: justify;
+            width: 80vw;
+        }
+        .form-group{
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+    </style>
 </head>
 
 <body>
+    <div class="form" id="montos">
+        <h3>MONTOS Y FECHAS</h3>
+        <P>Llenar en orden de arriba a abajo, si no cubre todos dejar en blanco, no colocar fechas donde no recibio monto</P>
+        <div class="form-group">
+            <label for="monto1">Monto:</label><input type="number" id="monto1"><label for="fechaMonto1">Fecha: </label><input type="date" id="fechaMonto1">
+        </div>
+        <div class="form-group">
+            <label for="monto2">Monto:</label><input type="number" id="monto2"><label for="fechaMonto2">Fecha: </label><input type="date" id="fechaMonto2">
+        </div>
+        <div class="form-group">
+            <label for="monto3">Monto:</label><input type="number" id="monto3"><label for="fechaMonto3">Fecha: </label><input type="date" id="fechaMonto3">
+        </div>
+        <div class="form-group">
+            <label for="monto4">Monto:</label><input type="number" id="monto4"><label for="fechaMonto4">Fecha: </label><input type="date" id="fechaMonto4">
+        </div>
+        <div class="form-group">
+            <label for="monto5">Monto:</label><input type="number" id="monto5"><label for="fechaMonto5">Fecha: </label><input type="date" id="fechaMonto5">
+        </div>
+        <div class="form-group">
+            <label for="monto6">Monto:</label><input type="number" id="monto6"><label for="fechaMonto6">Fecha: </label><input type="date" id="fechaMonto6">
+        </div>
+    </div>
 
     <h2>Generar Liquidación</h2>
     <button id="btnGenerar" onclick="iniciarGeneracionPDF()">Generar PDF</button>
+
+    <script>
+        function numeroALetras(num) {
+            if (num === 0) return 'CERO';
+
+            const u = ['', 'un', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve'];
+            const d = ['diez', 'once', 'doce', 'trece', 'catorce', 'quince', 'dieciséis', 'diecisiete', 'dieciocho', 'diecinueve'];
+            const de = ['', '', 'veinte', 'treinta', 'cuarenta', 'cincuenta', 'sesenta', 'setenta', 'ochenta', 'noventa'];
+            const c = ['', 'ciento', 'doscientos', 'trescientos', 'cuatrocientos', 'quinientos', 'seiscientos', 'setecientos', 'ochocientos', 'novecientos'];
+
+            function traducir(n) {
+                if (n < 10) return u[n];
+                if (n < 20) return d[n - 10];
+                if (n < 30) return n === 20 ? 'veinte' : 'veinti' + u[n % 10];
+                if (n < 100) return de[Math.floor(n / 10)] + (n % 10 ? ' y ' + u[n % 10] : '');
+                if (n < 1000) return n === 100 ? 'cien' : c[Math.floor(n / 100)] + ' ' + traducir(n % 100);
+                if (n < 1000000) {
+                    let miles = Math.floor(n / 1000);
+                    let resto = n % 1000;
+                    return (miles === 1 ? 'mil' : traducir(miles) + ' mil') + (resto ? ' ' + traducir(resto) : '');
+                }
+                let millones = Math.floor(n / 1000000);
+                let resto = n % 1000000;
+                return (millones === 1 ? 'un millón' : traducir(millones) + ' millones') + (resto ? ' ' + traducir(resto) : '');
+            }
+
+            // Se limpia el texto y se convierte todo a MAYÚSCULAS
+            return traducir(num).trim().replace(/\s+/g, ' ').toUpperCase();
+        };
+        
+
+    </script>
 
     <script>
         // Verificar que pdfmake cargó desde el CDN
@@ -78,6 +153,7 @@
 
         // === 3. DISEÑO Y CONSTRUCCIÓN DEL PDF ===
         function generarPDF(imagenBase64) {
+
             pdfMake.fonts = {
                 Roboto: {
                     normal: 'Roboto-Regular.ttf',
@@ -98,6 +174,7 @@
                     bolditalics: 'PinyonScript-Regular.ttf'
                 }
             };
+
 
             const docDefinition = {
                 pageMargins: [60, 80, 60, 60],
@@ -199,10 +276,10 @@
                         text: `CHEQUES UTILIZADOS A LA FECHA DE LA ELABORACIÓN DE ESTA LIQUIDACIÓN:  DEL______ N° AL N°______`, fontSize: 9, margin: [0, 0, 0, 10]
                     },
                     {
-                        text: `FECHA DEL ÚLTIMO CHEQUE UTILIZADO EN ESTA LIQUIDACIÓN: _______`, fontSize: 9, margin: [0, 0, 0, 12]
+                        text: `FECHA DEL ÚLTIMO CHEQUE UTILIZADO EN ESTA LIQUIDACIÓN: _______`, fontSize: 9, margin: [0, 0, 0, 10]
                     },
                     {
-                        text: `FONDOS TRANSFERIDOS, RECIBIDOS, INVERTIDOS Y LIQUIDADOS $_______`, fontSize: 9, margin: [0, 0, 0, 12]
+                        text: `FONDOS TRANSFERIDOS, RECIBIDOS, INVERTIDOS Y LIQUIDADOS $_______`, fontSize: 9, margin: [0, 0, 0, 10]
                     },
                     {
                         text: `CANTIDAD EN LETRAS: _________________________________\n\n`, fontSize: 9,
@@ -215,7 +292,12 @@
                             body: [
                                 [{ text: 'N DE CUENTA', alignment: 'center' }, { text: 'CONCEPTO', alignment: 'center', colSpan: 2, }, '', 'VALOR PARCIAL', { text: 'VALOR TOTAL', alignment: 'right' }],
                                 ['', { text: 'MONTO RECIBIDO Y FECHA:', bold: true, colSpan: 2, }, '', '', ''],
-                                [``, '', { text: 'FECHA: ', bold: true }, '', ''],
+                                ['', '', { text: `FECHA: `, bold: true }, '', ''],
+                                ['', '', { text: `FECHA: `, bold: true }, '', ''],
+                                ['', '', { text: `FECHA: `, bold: true }, '', ''],
+                                ['', '', { text: `FECHA: `, bold: true }, '', ''],
+                                ['', '', { text: `FECHA: `, bold: true }, '', ''],
+                                [``, '', { text: `FECHA: `, bold: true }, '', ''],
                                 ['', { text: `TOTAL: $`, colSpan: 2, }, '', '', ''],
                                 ['', { text: `MENOS RUBROS DE OPERACIÓN:`, colSpan: 2, bold: true }, '', '', ''],
                                 ['', { text: `TOTAL MONTO INVERTIDO:`, colSpan: 2, bold: true }, '', '', ''],
@@ -232,13 +314,13 @@
                                 ['', { text: `TOTAL INVERTIDO EN RUBRO Nº 2`, colSpan: 2, alignment: 'right', bold: true }, '', '', ''],
                                 ['', { text: `TOTAL INVERTIDO EN TODOS LOS RUBROS.`, colSpan: 2, }, '', '', ''],
                                 ['', { text: `SALDO: MONTO RECIBIDO MENOS MONTO INVERTIDO.`, colSpan: 2, }, '', '', ''],
-                            ]
+                            ], heights: 10,
                         }
                     },
                     { text: '\n\nNOMBRE Y FIRMAS AUTORIZADAS DE LOS MIEMBROS DEL ORGANISMO DE ADMINISTRACIÓN ESCOLAR LOCAL EN LA CUENTA CORRIENTE', fontSize: 9 },
                     {
                         fontSize: 9,
-                        margin: [0, 30, 0, 0],
+                        margin: [0, 5, 0, 0],
                         table: {
                             widths: ['*', '*'],
                             body: [
@@ -249,7 +331,7 @@
                                 ['', { text: 'F:                                                          ', decoration: 'underline', bold: true, }],
                                 ['CONCEJAL DOCENTE', ''],
                             ],
-                            heights: 13,
+                            heights: 10,
                         }, layout: 'noBorders'
                     },
                     { text: `\n\n\nSELLO`, alignment: `center`, fontSize: 9, pageBreak: 'after', pageOrientation: 'landscape' },
@@ -261,7 +343,7 @@
                         fontSize: 9,
                         table: {
                             headerRows: 1,
-                            widths: [35, 40,'*',47,35, 35,35,35,35,35,35,40],
+                            widths: [35, 40, '*', 47, 35, 35, 35, 35, 35, 35, 35, 40],
                             body: [
                                 [{ text: 'NO. CHEQUE', rowSpan: 5, alignment: 'center', margin: [0, 30, 0, 0] }, { text: 'FECHA', rowSpan: 5, alignment: 'center', margin: [0, 30, 0, 0] }, { text: 'CONCEPTO', rowSpan: 5, alignment: 'center', margin: [0, 30, 0, 0] }, { text: 'No. FACTURA O CHEQUE', rowSpan: 5, alignment: 'center', margin: [0, 30, 0, 0] }, { text: 'COMPONENTE DE OPERACIÓN Y FUNCIONAMIENTOS, PROYECTOS Y OTROS.', colSpan: 7, alignment: 'center', margin: [0, 0, 0, 0], bold: true }, '', '', '', '', '', '', { text: 'TOTAL', rowSpan: 5, alignment: 'center', margin: [0, 30, 0, 0], fontSize: 13, bold: true },],
                                 ['', '', '', '', { text: 'NO.1 GASTOS CORRIENTES', colSpan: 5, alignment: 'center', margin: [0, 0, 0, 0], bold: true }, '', '', '', '', { text: '', colSpan: 2, alignment: 'center', margin: [0, 0, 0, 0] }, '', ''],
@@ -283,18 +365,94 @@
                             heights: 12,
                         }
                     },
-                    { text: '\nSELLO', alignment: 'center', pageBreak: 'after', pageOrientation: 'portrait', fontSize: 9, }
+                    { text: '\nSELLO', alignment: 'center', pageBreak: 'after', pageOrientation: 'portrait', fontSize: 9, },
+
+                    //PAGINA 4
+                    {
+                        table: {
+                            style: 'tablaLista',
+                            widths: ['*'],
+                            body: [
+                                [{
+                                    text: [
+                                        { text: '\n5. PARA USOS DE LA DIRECCIÓN DEPARTAMENTAL DE EDUCACION:\n\n' },
+                                        { text: `REEMBOLSO             $_______________ NO. DE CHEQUE _________________________ FECHA ________________.\n\n` },
+                                        { text: `REEMBOLSO             $_______________ NO. DE CHEQUE _________________________ FECHA ________________.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n` }
+                                    ], margin: [30, 0, 30, 0]
+                                }],
+                            ],
+                        }
+                    },
+                    { text: 'OBSERVACIONES:', bold: true, margin: [40, 20, 40, 10], fontSize: 9 },
+                    {
+                        style: 'cortarTabla',
+                        table: {
+                            widths: ['*'], // Ocupa el 100% del ancho disponible
+                            body: [
+                                [{ text: '', margin: [0, 2] }], // Primera línea de escritura
+                                [{ text: '', margin: [0, 8] }], // Segunda línea
+                                [{ text: '', margin: [0, 8] }], // Tercera línea
+                                [{ text: '', margin: [0, 8] }]  // Cuarta línea
+                            ],
+                        },
+                        layout: {
+                            // Oculta los bordes verticales y el superior, solo deja las líneas horizontales
+                            vLineWidth: function () { return 0; },
+                            hLineWidth: function (i) { return i === 0 ? 0 : 1; }, // No dibuja el borde de arriba de la tabla
+                            hLineColor: function () { return '#000000'; } // Color gris para que no sea tan oscuro
+                        },
+                    },
+                    { text: '\n\nDECLARAMOS BAJO JURAMENTO QUE LOS DATOS EN LA PRESENTE LIQUIDACIÓN SON CIFRAS REALES, POR LO QUE ASUMIMOS LA RESPONSABILIDAD CORRESPONDIENTE.', style: 'cortarTabla', bold: true, fontSize: 9 },
+                    { text: `\nRESPONSABLE: __________________________________________          F: ________________________   SELLO\n\nPRESIDENTE DEL ORGANISMO\n\n\n`, style: 'cortarTabla', },
+                    { text: '\n6. RECEPCIÓN DE FORMULARIO DE AUTOLIQUIDACIÓN', bold: true },
+                    {
+                        text: [
+                            { text: '\nRUBRO LIQUIDADO:', bold: true }, { text: '__________________________________________', }, { text: '   AÑO: ', bold: true, }, { text: '________' }, { text: '  MONTO:', bold: true, }, { text: '$___________' }
+                        ], style: 'cortarTabla'
+                    },
+                    { text: '\n\n\nRECIBIDA POR:___________________________________________               SELLO DDE\n\nNOMBRE Y FIRMA DEL TECNICO DE LA DDE', style: 'cortarTabla', },
+                    { text: `\n\nFECHA DE LIQUIDACIÓN:____________________________________________ `, style: 'cortarTabla', pageBreak: 'after' },
+                    //PAGINA 5
+                    { text: 'INFORME DE RENDICIÓN DE CUENTAS', alignment: 'center', fontSize: 14, bold: true },
+                    { text: `\nCENTRO ESCOLAR: \nMUNICIPIO:                    DEPARTAMENTO: \nCÓDIGO:`, fontSize: 12, lineHeight: 1.5 },
+                    { text: '\nDATOS GENERALES: ', fontSize: 12, bold: true, decoration: 'underline', },
+                    { text: `\nMonto Recibido $                       Nombre del Banco \n\nNúmero de Cuenta:`, fontSize: 12 },
+                    { text: '\nBENEFICIOS ALCANZADOS: ', fontSize: 12, bold: true, decoration: 'underline', },
+                    { text: '\nCUMPLIMIENTO DE OBJETIVOS Y METAS: ', fontSize: 12, bold: true, decoration: 'underline', },
+                    { text: '\nPOBLACIÓN BENEFICIADA ', fontSize: 12, bold: true, decoration: 'underline', },
+                    { text: `\nNIÑOS                       NIÑAS                        TOTAL\n\nMAESTROS:                       FAMILIAS:`, fontSize: 11 },
+                    { text: `\nY no habiendo más que hacer constar firmamos la presente Acta de Rendición de Cuentas a los días del mes de  de \n\n\n`, fontSize: 11 },
+                    {
+                        table: {
+                            headerRows: 1,
+                            widths: ['*', '*', '*', '*', '*'],
+                            body: [
+                                [{ text: 'F: _______________________________', colSpan: 2, }, '', '', { text: 'F: _______________________________', colSpan: 2, }, ''],
+                                [{ text: `Nombre: `, colSpan: 2, }, '', '', { text: `Nombre: `, colSpan: 2, }, ''],
+                                [{ text: 'PRESIDENTE', colSpan: 2, alignment: 'center' }, '', '', { text: 'TESORERO/A', colSpan: 2, alignment: 'center' }, ''],
+                                ['', '', { text: 'Sello', alignment: 'center' }, '', ''],
+                                ['', '', '', '', ''],
+                                ['', '', '', '', ''],
+                                ['', { text: 'F: _______________________________', colSpan: 3, alignment: 'center' }, '', '', ''],
+                                ['', { text: `Nombre: `, colSpan: 3, alignment: 'center' }, '', '', ''],
+                                ['', { text: 'CONCEJAL DE MAESTROS', colSpan: 3, alignment: 'center' }, '', '', ''],
+                            ], heights: 10,
+                        },
+                        layout: 'noBorders',
+                    },
                 ],
                 styles: {
                     tablaLista: { fontSize: 9, },
+                    cortarTabla: { margin: [40, 0, 40, 0] },
                 },
                 defaultStyle: {
-                    fontSize: 11,
+                    fontSize: 9,
                 }
             };
 
             pdfMake.createPdf(docDefinition).download('liquidacion_local.pdf');
-        }
+        };
+
     </script>
 </body>
 
