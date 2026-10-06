@@ -103,56 +103,193 @@
                 pageMargins: [60, 80, 60, 60],
                 pageSize: 'LETTER',
                 header: {
-    table: {
-        widths: ['auto', '*'], // Mantienes las 2 columnas: Logo e Información
-        body: [
-            [
-                // COLUMNA 1: Tu logo (Sin usar rowSpan que rompe el header)
-                imagenBase64
-                    ? { image: imagenBase64, width: 125, margin: [15, 10, 0, 0] }
-                    : { text: '[Sin logo]', margin: [15, 15, 0, 0] },
+                    table: {
+                        widths: ['auto', '*'], // Mantienes las 2 columnas: Logo e Información
+                        body: [
+                            [
+                                // COLUMNA 1: Tu logo (Sin usar rowSpan que rompe el header)
+                                imagenBase64
+                                    ? { image: imagenBase64, width: 125, margin: [15, 10, 0, 0] }
+                                    : { text: '[Sin logo]', margin: [15, 15, 0, 0] },
 
-                // COLUMNA 2: Usamos un bloque contenedor para manejar el espacio vertical libremente
-                {
-                    stack: [
-                        // Renglón vacío superior (Equivale a tu fila anterior)
-                        { text: '', height: 10 }, 
-                        { text: '', height: 10 }, 
-                        
-                        // Tu texto oficial que ahora sí se va a renderizar al 100%
-                        {
-                            text: '\nDirección Departamental de Educación Chalatenango',
-                            font: 'PinyonScript',
-                            fontSize: 22,
-                            margin: [10, 15, 0, 0] // Ajusta el segundo número para bajar o subir el texto respecto al logo
-                        }
-                    ]
+                                // COLUMNA 2: Usamos un bloque contenedor para manejar el espacio vertical libremente
+                                {
+                                    stack: [
+                                        // Renglón vacío superior (Equivale a tu fila anterior)
+                                        { text: '', height: 10 },
+                                        { text: '', height: 10 },
+
+                                        // Tu texto oficial que ahora sí se va a renderizar al 100%
+                                        {
+                                            text: '\nDirección Departamental de Educación Chalatenango',
+                                            font: 'PinyonScript',
+                                            fontSize: 22,
+                                            margin: [10, 15, 0, 0] // Ajusta el segundo número para bajar o subir el texto respecto al logo
+                                        }
+                                    ]
+                                },
+                            ]
+                        ]
+                    },
+                    layout: 'noBorders' // Quita los bordes para mantener la estética limpia
                 },
-            ]
-        ]
-    },
-    layout: 'noBorders' // Quita los bordes para mantener la estética limpia
-},
 
 
                 content: [
-                    { text: 'FORMULARIO DE AUTOLIQUIDACIÓN DE FONDOS TRANSFERIDOS POR EL MINED', fontSize: 11, decoration: 'underline',
-                        bold: true, margin: [0,0,0,12],
+                    {
+                        text: 'FORMULARIO DE AUTOLIQUIDACIÓN DE FONDOS TRANSFERIDOS POR EL MINED', fontSize: 11, decoration: 'underline',
+                        bold: true, margin: [0, 0, 0, 12],
                     },
                     {
-                        text: 'PRESUPUESTO ESCOLAR:', fontSize: 11, BOLD: true, alignment: 'center', margin: [0,0,0,12],
+                        text: 'PRESUPUESTO ESCOLAR:', fontSize: 11, BOLD: true, alignment: 'center', margin: [0, 0, 0, 12],
                     },
                     {
                         text: 'Rubro: ___________________________________________________________ Año:___________',
-                        margin: [0,0,0,12]
+                        margin: [0, 0, 0, 12]
                     },
                     {
-                        text: 'FUENTE DE FINANCIAMIENTO: ____________________', margin: [15,0,0,12], fontSize: 9,
+                        text: 'FUENTE DE FINANCIAMIENTO: ____________________', margin: [20, 0, 0, 12], fontSize: 9,
                     },
+                    {
+                        style: 'tablaLista',
+                        table: {
+                            headerRows: 1,
+                            widths: [20, 20, 152, '*'],
+                            body: [
+                                ['1. ', { text: 'DATOS DEL ORGANISMO DE ADMINISTRACIÓN ESCOLAR:', colSpan: 3, bold: true }, '', ''],
+                                ['', '1.1', 'NOMBRE DEL CENTRO EDUCATIVO:', ''],
+                                ['', '1.2', 'CODIGO:', ''],
+                                ['', '1.3', 'UBICACIÓN:   ', ''],
+                                ['', '1.4', 'NIT DEL ORGANISMO:', ''],
+                                ['2.', { text: 'DIRECCIÓN:', colSpan: 3, bold: true }, '', ''],
+                                ['', '2.1', 'DEPARTAMENTO: ', ''],
+                                ['', '2.2', 'MUNICIPIO:', ''],
+                                ['', '2.3', 'CANTÓN: ', ''],
+                                ['', '2.4', 'CASERÍO: ', ''],
+                                ['3.', { text: 'DATOS BANCARIOS:', colSpan: 3, bold: true }, '', ''],
+                                ['', '3.1', 'NOMBRE DEL BANCO', ''],
+                                ['', '3.2', 'CUENTA CORRIENTE No:', ''],
+                                ['', '3.3', 'NOMBRE DE LA CUENTA CORRIENTE:', ''],
+                                ['4.', { text: 'NOMBRES Y FIRMAS AUTORIZADAS EN LA CUENTA CORRIENTE:', colSpan: 3, bold: true }, '', ''],
+                            ],
+                            heights: 18,
+                        },
+                        layout: 'noBorders'
+                    },
+                    {
+                        style: 'tablaLista',
+                        margin: [0, 30, 0, 0],
+                        table: {
+                            widths: ['*', '*'],
+                            body: [
+                                [{ text: '' }, { text: 'F:                                                          ', decoration: 'underline', bold: true, }],
+                                ['PRESIDENTE', ''],
+                                ['', { text: 'F:                                                          ', decoration: 'underline', bold: true, }],
+                                ['TESORERO', ''],
+                                ['', { text: 'F:                                                          ', decoration: 'underline', bold: true, }],
+                                ['CONCEJAL DOCENTE', ''],
+                            ],
+                            heights: 13,
+                        }, layout: 'noBorders'
+                    },
+                    { text: `\n\n\nSELLO`, alignment: `center`, fontSize: 9, pageBreak: 'after', },
 
+                    //PAGINA 2
+                    {
+                        text: `CHEQUES UTILIZADOS A LA FECHA DE LA ELABORACIÓN DE ESTA LIQUIDACIÓN:  DEL______ N° AL N°______`, fontSize: 9, margin: [0, 0, 0, 10]
+                    },
+                    {
+                        text: `FECHA DEL ÚLTIMO CHEQUE UTILIZADO EN ESTA LIQUIDACIÓN: _______`, fontSize: 9, margin: [0, 0, 0, 12]
+                    },
+                    {
+                        text: `FONDOS TRANSFERIDOS, RECIBIDOS, INVERTIDOS Y LIQUIDADOS $_______`, fontSize: 9, margin: [0, 0, 0, 12]
+                    },
+                    {
+                        text: `CANTIDAD EN LETRAS: _________________________________\n\n`, fontSize: 9,
+                    },
+                    {
+                        fontSize: 9,
+                        table: {
+                            headerRows: 1,
+                            widths: [35, '*', '*', 85, 85],
+                            body: [
+                                [{ text: 'N DE CUENTA', alignment: 'center' }, { text: 'CONCEPTO', alignment: 'center', colSpan: 2, }, '', 'VALOR PARCIAL', { text: 'VALOR TOTAL', alignment: 'right' }],
+                                ['', { text: 'MONTO RECIBIDO Y FECHA:', bold: true, colSpan: 2, }, '', '', ''],
+                                [``, '', { text: 'FECHA: ', bold: true }, '', ''],
+                                ['', { text: `TOTAL: $`, colSpan: 2, }, '', '', ''],
+                                ['', { text: `MENOS RUBROS DE OPERACIÓN:`, colSpan: 2, bold: true }, '', '', ''],
+                                ['', { text: `TOTAL MONTO INVERTIDO:`, colSpan: 2, bold: true }, '', '', ''],
+                                ['', { text: `RUBRO Nº 1-GASTOS DE OPERACIÓN:`, colSpan: 2, bold: true }, '', '', ''],
+                                ['1.1', { text: `MATERIAL EDUCATIVO.`, colSpan: 2, }, '', '', ''],
+                                ['1.2', { text: `OPERACIÓN LOGÍSTICA DEL CENTRO.`, colSpan: 2, }, '', '', ''],
+                                ['1.3', { text: `ALIMENTACIÓN ESCOLAR.`, colSpan: 2, }, '', '', ''],
+                                ['1.5', { text: `REMUNERACIONES.`, colSpan: 2, }, '', '', ''],
+                                ['1.6', { text: `GASTOS DE GRADUACIÓN.`, colSpan: 2, }, '', '', ''],
+                                ['', { text: `TOTAL INVERTIDO EN RUBRO Nº 1`, colSpan: 2, alignment: 'right', bold: true }, '', '', ''],
+                                ['', { text: `RUBRO Nº 2- INVERSIONES.`, colSpan: 2, bold: true }, '', '', ''],
+                                ['2.1', { text: `ADQUISICIÓN DE EQUIPO.`, colSpan: 2, }, '', '', ''],
+                                ['2.2', { text: `ADQUISICIÓN DE MOBILIARIO.`, colSpan: 2, }, '', '', ''],
+                                ['', { text: `TOTAL INVERTIDO EN RUBRO Nº 2`, colSpan: 2, alignment: 'right', bold: true }, '', '', ''],
+                                ['', { text: `TOTAL INVERTIDO EN TODOS LOS RUBROS.`, colSpan: 2, }, '', '', ''],
+                                ['', { text: `SALDO: MONTO RECIBIDO MENOS MONTO INVERTIDO.`, colSpan: 2, }, '', '', ''],
+                            ]
+                        }
+                    },
+                    { text: '\n\nNOMBRE Y FIRMAS AUTORIZADAS DE LOS MIEMBROS DEL ORGANISMO DE ADMINISTRACIÓN ESCOLAR LOCAL EN LA CUENTA CORRIENTE', fontSize: 9 },
+                    {
+                        fontSize: 9,
+                        margin: [0, 30, 0, 0],
+                        table: {
+                            widths: ['*', '*'],
+                            body: [
+                                [{ text: '' }, { text: 'F:                                                          ', decoration: 'underline', bold: true, }],
+                                ['PRESIDENTE', ''],
+                                ['', { text: 'F:                                                          ', decoration: 'underline', bold: true, }],
+                                ['TESORERO', ''],
+                                ['', { text: 'F:                                                          ', decoration: 'underline', bold: true, }],
+                                ['CONCEJAL DOCENTE', ''],
+                            ],
+                            heights: 13,
+                        }, layout: 'noBorders'
+                    },
+                    { text: `\n\n\nSELLO`, alignment: `center`, fontSize: 9, pageBreak: 'after', pageOrientation: 'landscape' },
+
+                    //PAGINA 3
+                    { text: 'DIRECCCIÓN DEPARTAMENTAL DE EDUCACIÓN DE CHALATENANGO \nCUADRO RESUMEN DE GASTOS\n\n', alignment: 'center', bold: true, lineHeight: 1.3 },
+                    { text: `RUBRO: _______________________________________________________________________________________, AÑO: ______________________________\n\n\n`, alignment: 'center' },
+                    {
+                        fontSize: 9,
+                        table: {
+                            headerRows: 1,
+                            widths: [35, 40,'*',47,35, 35,35,35,35,35,35,40],
+                            body: [
+                                [{ text: 'NO. CHEQUE', rowSpan: 5, alignment: 'center', margin: [0, 30, 0, 0] }, { text: 'FECHA', rowSpan: 5, alignment: 'center', margin: [0, 30, 0, 0] }, { text: 'CONCEPTO', rowSpan: 5, alignment: 'center', margin: [0, 30, 0, 0] }, { text: 'No. FACTURA O CHEQUE', rowSpan: 5, alignment: 'center', margin: [0, 30, 0, 0] }, { text: 'COMPONENTE DE OPERACIÓN Y FUNCIONAMIENTOS, PROYECTOS Y OTROS.', colSpan: 7, alignment: 'center', margin: [0, 0, 0, 0], bold: true }, '', '', '', '', '', '', { text: 'TOTAL', rowSpan: 5, alignment: 'center', margin: [0, 30, 0, 0], fontSize: 13, bold: true },],
+                                ['', '', '', '', { text: 'NO.1 GASTOS CORRIENTES', colSpan: 5, alignment: 'center', margin: [0, 0, 0, 0], bold: true }, '', '', '', '', { text: '', colSpan: 2, alignment: 'center', margin: [0, 0, 0, 0] }, '', ''],
+                                ['', '', '', '', { text: '1.1', alignment: 'center', bold: true, fontSize: 8 }, { text: '1.2', alignment: 'center', bold: true, fontSize: 8 }, { text: '1.3', alignment: 'center', bold: true, fontSize: 8 }, { text: '1.5', alignment: 'center', bold: true, fontSize: 8 }, { text: '1.6', alignment: 'center', bold: true, fontSize: 8 }, { text: '2.1', alignment: 'center', bold: true, fontSize: 8 }, { text: '2.2', alignment: 'center', bold: true, fontSize: 8 }, '',],
+                                ['', '', '', '', { text: 'Material Educativo', alignment: 'center', fontSize: 7 }, { text: 'Operación Logística', alignment: 'center', fontSize: 7 }, { text: 'Alimentación Escolar', alignment: 'center', fontSize: 7 }, { text: 'Remuneraciones', alignment: 'center', fontSize: 7 }, { text: 'Gastos de Graduación', alignment: 'center', fontSize: 7 }, { text: 'Adq. de Equipo', alignment: 'center', fontSize: 7 }, { text: 'Adq. de Mobiliario', alignment: 'center', fontSize: 7 }, '',],
+                                ['', '', '', '', '', '', '', '', '', '', '', '',],
+                                ['', '', '', '', '', '', '', '', '', '', '', '',],
+                                ['', '', '', '', '', '', '', '', '', '', '', '',],
+                                ['', '', '', '', '', '', '', '', '', '', '', '',],
+                                ['', '', '', '', '', '', '', '', '', '', '', '',],
+                                ['', '', '', '', '', '', '', '', '', '', '', '',],
+                                ['', '', '', '', '', '', '', '', '', '', '', '',],
+                                ['', '', '', '', '', '', '', '', '', '', '', '',],
+                                ['', '', '', '', '', '', '', '', '', '', '', '',],
+                                [{ text: 'TRANSFERENCIA MINEDUCYT TOTAL POR COMPONENTE', colSpan: 11, }, '', '', '', '', '', '', '', '', '', '', '',],
+                                [{ text: 'TOTAL POR COMPONENTE', colSpan: 4, }, '', '', '', '', '', '', '', '', '', '', '',],
+                                [{ text: 'REINTEGRO', colSpan: 11, }, '', '', '', '', '', '', '', '', '', '', '',],
+                            ],
+                            heights: 12,
+                        }
+                    },
+                    { text: '\nSELLO', alignment: 'center', pageBreak: 'after', pageOrientation: 'portrait', fontSize: 9, }
                 ],
+                styles: {
+                    tablaLista: { fontSize: 9, },
+                },
                 defaultStyle: {
-                    
+                    fontSize: 11,
                 }
             };
 
