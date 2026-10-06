@@ -3,55 +3,112 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Liquidación con Fuentes Locales</title>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
     <style>
-        body{
+        body {
             margin: 20px;
-            display: flex;
-            flex-direction: column;
+            text-align: center;
         }
-        .form{
+
+        h1 {
+            color: rgb(41, 194, 255);
+            text-transform: uppercase;
+            font-size: 22px;
+        }
+
+        .form {
+            background: #72ecff;
             display: flex;
             flex-direction: column;
-            gap: 0.7rem;
-            border: 3px solid black;
+            gap: 10px;
+            border-radius: 1.5rem;
             padding: 10px;
-            text-align: justify;
-            width: 80vw;
+            justify-content: center;
+            align-items: center;
         }
-        .form-group{
+
+        .form-group {
             display: flex;
             flex-direction: column;
-            gap: 2rem;
+            gap: 10px;
         }
     </style>
 </head>
 
 <body>
+    <h1>GENERADOR DE DOCUMENTACIÓN AUTOLIQUIDACIÓN</h1>
+
+    <div class="form">
+        <div class="form-group">
+            <label for="rubro">Rubro: </label><input type="text" id="rubro">
+        </div>
+        <div class="form-group">
+            <label for="anio">Año: </label><input type="number" id="anio">
+        </div>
+        <div class="form-group">
+            <label for="fuente">Fuente de financiamiento: </label><input type="text" id="fuente">
+        </div>
+        
+    </div>
+
+    <div class="form" id="datosOAE">
+        <h3>DATOS DEL ORGANISMO DE ADMINISTRACIÓN ESCOLAR</h3>
+        <div class="form-group">
+            <label for="nombreEscuela">Nombre del Centro Escolar: </label><input type="text" id="nombreEscuela">
+        </div>
+        <div class="form-group">
+            <label for="codigoEscuela">Código: </label><input type="number" id="codigoEscuela">
+        </div>
+        <div class="form-group">
+            <label for="ubicacion">Ubicación</label><input type="text" id="ubicacion">
+        </div>
+        <div class="form-group">
+            <label for="nit">NIT: </label><input type="text" id="nit">
+        </div>
+    </div>
+    <br><br>
     <div class="form" id="montos">
         <h3>MONTOS Y FECHAS</h3>
-        <P>Llenar en orden de arriba a abajo, si no cubre todos dejar en blanco, no colocar fechas donde no recibio monto</P>
+        <P>Llenar en orden de arriba a abajo, si no cubre todos dejar en blanco, no colocar fechas donde no recibio
+            monto</P>
         <div class="form-group">
-            <label for="monto1">Monto:</label><input type="number" id="monto1"><label for="fechaMonto1">Fecha: </label><input type="date" id="fechaMonto1">
+            <label for="monto1">Monto:</label><input type="number" id="monto1" class="sumar"><label
+                for="fechaMonto1">Fecha:
+            </label><input type="date" id="fechaMonto1">
         </div>
         <div class="form-group">
-            <label for="monto2">Monto:</label><input type="number" id="monto2"><label for="fechaMonto2">Fecha: </label><input type="date" id="fechaMonto2">
+            <label for="monto2">Monto:</label><input type="number" id="monto2" class="sumar"><label
+                for="fechaMonto2">Fecha:
+            </label><input type="date" id="fechaMonto2">
         </div>
         <div class="form-group">
-            <label for="monto3">Monto:</label><input type="number" id="monto3"><label for="fechaMonto3">Fecha: </label><input type="date" id="fechaMonto3">
+            <label for="monto3">Monto:</label><input type="number" id="monto3" class="sumar"><label
+                for="fechaMonto3">Fecha:
+            </label><input type="date" id="fechaMonto3">
         </div>
         <div class="form-group">
-            <label for="monto4">Monto:</label><input type="number" id="monto4"><label for="fechaMonto4">Fecha: </label><input type="date" id="fechaMonto4">
+            <label for="monto4">Monto:</label><input type="number" id="monto4" class="sumar"><label
+                for="fechaMonto4">Fecha:
+            </label><input type="date" id="fechaMonto4">
         </div>
         <div class="form-group">
-            <label for="monto5">Monto:</label><input type="number" id="monto5"><label for="fechaMonto5">Fecha: </label><input type="date" id="fechaMonto5">
+            <label for="monto5">Monto:</label><input type="number" id="monto5" class="sumar"><label
+                for="fechaMonto5">Fecha:
+            </label><input type="date" id="fechaMonto5">
         </div>
         <div class="form-group">
-            <label for="monto6">Monto:</label><input type="number" id="monto6"><label for="fechaMonto6">Fecha: </label><input type="date" id="fechaMonto6">
+            <label for="monto6">Monto:</label><input type="number" id="monto6" class="sumar"><label
+                for="fechaMonto6">Fecha:
+            </label><input type="date" id="fechaMonto6">
         </div>
+        <div class="form-group">
+            <textarea id="total" readonly value="0"></textarea>
+        </div>
+        <br>
     </div>
 
     <h2>Generar Liquidación</h2>
@@ -59,7 +116,15 @@
 
     <script>
         function numeroALetras(num) {
-            if (num === 0) return 'CERO';
+            // Convertimos a número flotante y fijamos a 2 decimales para evitar problemas de redondeo
+            const numeroFlotante = parseFloat(num);
+            if (isNaN(numeroFlotante)) return '';
+
+            const entero = Math.floor(numeroFlotante);
+            // Extraemos los dos dígitos de los centavos
+            const centavos = Math.round((numeroFlotante - entero) * 100).toString().padStart(2, '0');
+
+            if (entero === 0 && centavos === '00') return 'CERO CON 00/100';
 
             const u = ['', 'un', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve'];
             const d = ['diez', 'once', 'doce', 'trece', 'catorce', 'quince', 'dieciséis', 'diecisiete', 'dieciocho', 'diecinueve'];
@@ -82,10 +147,45 @@
                 return (millones === 1 ? 'un millón' : traducir(millones) + ' millones') + (resto ? ' ' + traducir(resto) : '');
             }
 
-            // Se limpia el texto y se convierte todo a MAYÚSCULAS
-            return traducir(num).trim().replace(/\s+/g, ' ').toUpperCase();
+            // Traducimos la parte entera (si es 0, escribimos 'cero')
+            const textoEntero = entero === 0 ? 'cero' : traducir(entero);
+
+            // Armamos la cadena final uniendo el entero, el conector y la fracción de centavos
+            const resultadoCompleto = `${textoEntero} con ${centavos}/100`;
+
+            // Limpiamos espacios dobles y pasamos a MAYÚSCULAS
+            return resultadoCompleto.trim().replace(/\s+/g, ' ').toUpperCase();
         };
-        
+        function formatoFecha(fecha) {
+            if (fecha === '') {
+                return '';
+            }
+            else {
+                let nuevaFecha = fecha.split('-');
+                return `${nuevaFecha[2]}-${nuevaFecha[1]}-${nuevaFecha[0]}`;
+            }
+
+        };
+
+        const montos = document.querySelectorAll('.sumar');
+        // 1. CORRECCIÓN: Guarda el elemento completo, no su .value inicial
+        const resultado = document.getElementById('total');
+
+        function calcularTotal() {
+            let suma = 0;
+            montos.forEach(input => {
+                // 2. CORRECCIÓN: Usa 'input.value' (la variable del bucle), no 'montos.value'
+                suma += parseFloat(input.value) || 0;
+            });
+            // 3. CORRECCIÓN: Usa comillas invertidas `` y el símbolo \$ para las variables
+            resultado.value = `$${suma.toFixed(2)}`;
+        }
+
+        montos.forEach(input => {
+            input.addEventListener('input', calcularTotal);
+        });
+
+
 
     </script>
 
@@ -154,6 +254,7 @@
         // === 3. DISEÑO Y CONSTRUCCIÓN DEL PDF ===
         function generarPDF(imagenBase64) {
 
+
             pdfMake.fonts = {
                 Roboto: {
                     normal: 'Roboto-Regular.ttf',
@@ -221,11 +322,13 @@
                         text: 'PRESUPUESTO ESCOLAR:', fontSize: 11, BOLD: true, alignment: 'center', margin: [0, 0, 0, 12],
                     },
                     {
-                        text: 'Rubro: ___________________________________________________________ Año:___________',
-                        margin: [0, 0, 0, 12]
+                        text: [
+                            {text: `Rubro: ${document.getElementById('rubro').value}                                                 `},
+                            {text: `Año: ${document.getElementById('anio').value}\n\n`}
+                        ], fontSize: 11,
                     },
                     {
-                        text: 'FUENTE DE FINANCIAMIENTO: ____________________', margin: [20, 0, 0, 12], fontSize: 9,
+                        text: `FUENTE DE FINANCIAMIENTO: ${document.getElementById('fuente').value}`, margin: [20, 0, 0, 12], fontSize: 9,
                     },
                     {
                         style: 'tablaLista',
@@ -234,10 +337,10 @@
                             widths: [20, 20, 152, '*'],
                             body: [
                                 ['1. ', { text: 'DATOS DEL ORGANISMO DE ADMINISTRACIÓN ESCOLAR:', colSpan: 3, bold: true }, '', ''],
-                                ['', '1.1', 'NOMBRE DEL CENTRO EDUCATIVO:', ''],
-                                ['', '1.2', 'CODIGO:', ''],
-                                ['', '1.3', 'UBICACIÓN:   ', ''],
-                                ['', '1.4', 'NIT DEL ORGANISMO:', ''],
+                                ['', '1.1', {text: `NOMBRE DEL CENTRO EDUCATIVO:`}, {text: `${document.getElementById('nombreEscuela').value}`, decoration: 'underline'}],
+                                ['', '1.2', 'CODIGO:', {text: `${document.getElementById('codigoEscuela').value}`, decoration: 'underline'}],
+                                ['', '1.3', 'UBICACIÓN:   ', {text: `${document.getElementById('ubicacion').value}`, decoration: 'underline'}],
+                                ['', '1.4', 'NIT DEL ORGANISMO:', {text: `${document.getElementById('nit').value}`, decoration: 'underline'}],
                                 ['2.', { text: 'DIRECCIÓN:', colSpan: 3, bold: true }, '', ''],
                                 ['', '2.1', 'DEPARTAMENTO: ', ''],
                                 ['', '2.2', 'MUNICIPIO:', ''],
@@ -292,13 +395,12 @@
                             body: [
                                 [{ text: 'N DE CUENTA', alignment: 'center' }, { text: 'CONCEPTO', alignment: 'center', colSpan: 2, }, '', 'VALOR PARCIAL', { text: 'VALOR TOTAL', alignment: 'right' }],
                                 ['', { text: 'MONTO RECIBIDO Y FECHA:', bold: true, colSpan: 2, }, '', '', ''],
-                                ['', '', { text: `FECHA: `, bold: true }, '', ''],
-                                ['', '', { text: `FECHA: `, bold: true }, '', ''],
-                                ['', '', { text: `FECHA: `, bold: true }, '', ''],
-                                ['', '', { text: `FECHA: `, bold: true }, '', ''],
-                                ['', '', { text: `FECHA: `, bold: true }, '', ''],
-                                [``, '', { text: `FECHA: `, bold: true }, '', ''],
-                                ['', { text: `TOTAL: $`, colSpan: 2, }, '', '', ''],
+                                ['', `$${document.getElementById('monto1').value}`, { text: `FECHA: ${formatoFecha(document.getElementById('fechaMonto1').value || '')}`, bold: true }, '', ''],
+                                ['', `$${document.getElementById('monto2').value}`, { text: `FECHA: ${formatoFecha(document.getElementById('fechaMonto2').value || '')}`, bold: true }, '', ''],
+                                ['', `$${document.getElementById('monto3').value}`, { text: `FECHA: ${formatoFecha(document.getElementById('fechaMonto3').value || '')}`, bold: true }, '', ''],
+                                ['', `$${document.getElementById('monto4').value}`, { text: `FECHA: ${formatoFecha(document.getElementById('fechaMonto4').value || '')}`, bold: true }, '', ''],
+                                ['', `$${document.getElementById('monto5').value}`, { text: `FECHA: ${formatoFecha(document.getElementById('fechaMonto5').value || '')}`, bold: true }, '', ''],
+                                ['', `$${document.getElementById('monto6').value}`, { text: `FECHA: ${formatoFecha(document.getElementById('fechaMonto6').value || '')}`, bold: true }, '', {text: `${document.getElementById('total').value}`}],
                                 ['', { text: `MENOS RUBROS DE OPERACIÓN:`, colSpan: 2, bold: true }, '', '', ''],
                                 ['', { text: `TOTAL MONTO INVERTIDO:`, colSpan: 2, bold: true }, '', '', ''],
                                 ['', { text: `RUBRO Nº 1-GASTOS DE OPERACIÓN:`, colSpan: 2, bold: true }, '', '', ''],

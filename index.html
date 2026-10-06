@@ -6,70 +6,93 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Generador de documentos</title>
     <style>
-    body{
-        padding: 2rem;
-        font-family: sans-serif;
-        background: #ffffff;
-    }
-    h1{
-        color: rgb(41, 194, 255);
-        text-transform: uppercase;
-    }
-    #buscador{
-        width: 40rem;
-        height: 3rem;
-        border: 0.1rem solid blue;
-        padding: 0 0.5rem;
-        font-size: 25px;
-        border-radius: 0.5rem;
-        outline: none !important;
-        background: #ffffff;
-    }
-    #buscador:focus{
-        border-color: red;
-        background: #fff;
-    }
-    #temas{
-        display: flex;
-        flex-direction: row;
-        gap: 1.5rem; /* Aumentado el espacio para que las tarjetas no choquen al crecer */
-        padding: 20px 0; /* Espacio arriba y abajo para que el zoom no se corte */
-    }
-    .tema{
-        /* Modificado: El gradiente ahora es estático porque giraremos toda la tarjeta */
-        background: linear-gradient(135deg, #00afbb, #b367ff);
-        
-        /* Controla la velocidad de la animación del giro y tamaño */
-        transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-        
-        width: 15rem;
-        padding: 15px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-        cursor: pointer;
-        border-radius: 2rem;
-        font-size: 18px;
-        color: white;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1); /* Sombra suave para darle profundidad */
-    }
-    
-    /* EFECTO HOVER: Aquí ocurre la magia */
-    .tema:hover{
-        /* scale(1.08) lo hace un 8% más grande */
-        /* rotate(5deg) lo gira 5 grados (puedes cambiarlo a -5deg si quieres que gire al revés) */
-        transform: scale(1.08) rotate(5deg);
-        
-        /* Opcional: Aumenta la sombra al flotar para mejorar el efecto 3D */
-        box-shadow: 0 8px 25px rgba(0,0,0,0.2); 
-    }
-    
-    .tema span{
-        font-size: 50px;
-        margin: 0 auto; /* Corregido sin comas */
-    }
-</style>
+        body {
+            padding: 1%;
+            font-family: sans-serif;
+            background: #ffffff;
+            text-align: center;
+        }
+
+        h1 {
+            color: rgb(41, 194, 255);
+            text-transform: uppercase;
+            font-size: 22px;
+        }
+
+        #buscador {
+            width: 90%;
+            height: 3rem;
+            border: 0.1rem solid blue;
+            padding: 0 0.5rem;
+            font-size: 25px;
+            border-radius: 0.5rem;
+            outline: none !important;
+            background: #ffffff;
+        }
+
+        #buscador:focus {
+            border-color: red;
+            background: #fff;
+        }
+
+        #temas {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            /* Aumentado el espacio para que las tarjetas no choquen al crecer */
+            padding: 20px;
+            /* Espacio arriba y abajo para que el zoom no se corte */
+            align-items: center;
+        }
+
+        .tema {
+            /* Modificado: El gradiente ahora es estático porque giraremos toda la tarjeta */
+            background: linear-gradient(135deg, #00afbb, #b367ff);
+
+            /* Controla la velocidad de la animación del giro y tamaño */
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+            width: 80vw;
+            max-width: 250px;
+            height: 80vw;
+            max-height: 250px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 2rem;
+            font-size: 18px;
+            color: white;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            /* Sombra suave para darle profundidad */
+        }
+
+        /* EFECTO HOVER: Aquí ocurre la magia */
+        .tema:hover {
+            /* scale(1.08) lo hace un 8% más grande */
+            /* rotate(5deg) lo gira 5 grados (puedes cambiarlo a -5deg si quieres que gire al revés) */
+            transform: scale(1.08) rotate(5deg);
+
+            /* Opcional: Aumenta la sombra al flotar para mejorar el efecto 3D */
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .tema span {
+            font-size: 50px;
+            margin: 0 auto;
+            /* Corregido sin comas */
+        }
+
+
+        @media screen and (min-width: 750px) {
+            #temas{
+                display: flex;
+                flex-direction: row;
+                gap: 2rem;
+            }
+        }
+    </style>
 
 </head>
 
@@ -82,8 +105,8 @@
 
     <script>
         let temas = [
-            {titulo: "Autoliquidación", descripcion: "Genera el pdf de autoliquidación administrativa dando los datos solicitados en el formulario.", icono: "🧾", link: 'pages/liquidacion.html'},
-            {titulo: "Compras", descripcion: "Genera el pdf de Solicitud de cotización, Cotización, Plan de compras, Orden de compra y Acta de recepción.", icono: '📑', link: 'pages/compras.html'},
+            { titulo: "Autoliquidación", descripcion: "Genera el pdf de autoliquidación administrativa dando los datos solicitados en el formulario.", icono: "🧾", link: 'pages/liquidacion.html' },
+            { titulo: "Compras", descripcion: "Genera el pdf de Solicitud de cotización, Cotización, Plan de compras, Orden de compra y Acta de recepción.", icono: '📑', link: 'pages/compras.html' },
         ];
         temas.sort((a, b) => a.titulo.localeCompare(b.titulo));
         function crearTarjetas(lista) {
@@ -120,11 +143,12 @@
         });
     </script>
     <style>
-        .tarjetas{
+        .tarjetas {
             display: flex;
 
         }
-        .tarjeta{
+
+        .tarjeta {
             background-color: aquamarine;
         }
     </style>
