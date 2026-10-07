@@ -6,91 +6,159 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Generador de documentos</title>
     <style>
+        :root {
+            --primario: rgb(41, 194, 255);
+            --primario-oscuro: #0e7ba3;
+            --fondo: #f0f8fc;
+            --borde: #bfe9f9;
+        }
+
+        * { box-sizing: border-box; }
+
         body {
+            margin: 0;
             padding: 1%;
-            font-family: sans-serif;
-            background: #ffffff;
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: var(--fondo);
             text-align: center;
+            color: #14384a;
         }
 
         h1 {
-            color: rgb(41, 194, 255);
+            color: var(--primario);
             text-transform: uppercase;
             font-size: 22px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, .15);
+        }
+
+        /* ===== BUSCADOR (contenedor relativo para el botón ✕) ===== */
+        #buscador-contenedor {
+            position: relative;
+            width: 90%;
+            max-width: 500px;
+            margin: 0 auto;
         }
 
         #buscador {
-            width: 90%;
+            width: 100%;
             height: 3rem;
-            border: 0.1rem solid blue;
-            padding: 0 0.5rem;
-            font-size: 25px;
+            border: 1.5px solid var(--borde);
+            padding: 0 3rem 0 0.8rem;
+            font-size: 20px;
             border-radius: 0.5rem;
             outline: none !important;
-            background: #ffffff;
+            background: #fbfeff;
+            color: #14384a;
+            transition: border-color .15s ease, box-shadow .15s ease;
         }
 
         #buscador:focus {
-            border-color: red;
-            background: #fff;
+            border-color: var(--primario);
+            box-shadow: 0 0 0 3px rgba(41, 194, 255, .2);
+            background: #fbfeff;
         }
+
+        #buscador::placeholder { color: #9aa7b0; }
+
+        #btnLimpiar {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 30px;
+            height: 30px;
+            border: none;
+            border-radius: 50%;
+            background: var(--borde);
+            color: var(--primario-oscuro);
+            font-size: 15px;
+            font-weight: bold;
+            line-height: 1;
+            cursor: pointer;
+            display: none; /* Solo aparece cuando hay texto */
+        }
+
+        #btnLimpiar:hover { background: var(--primario); color: #fff; }
 
         #temas {
             display: flex;
             flex-direction: column;
             gap: 1rem;
-            /* Aumentado el espacio para que las tarjetas no choquen al crecer */
             padding: 20px;
-            /* Espacio arriba y abajo para que el zoom no se corte */
             align-items: center;
         }
 
         .tema {
-            /* Modificado: El gradiente ahora es estático porque giraremos toda la tarjeta */
-            background: linear-gradient(135deg, #00afbb, #b367ff);
-
-            /* Controla la velocidad de la animación del giro y tamaño */
-            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            background: #ffffff;
+            border: 2px solid var(--primario);
+            border-radius: 1.5rem;
+            box-shadow: 0 4px 14px rgba(14, 123, 163, .12);
 
             width: 80vw;
             max-width: 250px;
-            height: 80vw;
-            max-height: 250px;
+            min-height: 250px;
             padding: 15px;
             display: flex;
             flex-direction: column;
             text-align: center;
             cursor: pointer;
-            border-radius: 2rem;
             font-size: 18px;
-            color: white;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            /* Sombra suave para darle profundidad */
+            color: #14384a;
+
+            transition: transform .15s ease, box-shadow .15s ease;
         }
 
-        /* EFECTO HOVER: Aquí ocurre la magia */
         .tema:hover {
-            /* scale(1.08) lo hace un 8% más grande */
-            /* rotate(5deg) lo gira 5 grados (puedes cambiarlo a -5deg si quieres que gire al revés) */
-            transform: scale(1.08) rotate(5deg);
-
-            /* Opcional: Aumenta la sombra al flotar para mejorar el efecto 3D */
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(14, 123, 163, .3);
         }
 
-        .tema span {
-            font-size: 50px;
-            margin: 0 auto;
-            /* Corregido sin comas */
+        .tema:active { transform: translateY(0); }
+
+        .tema h3 {
+            margin: -15px -15px 10px;
+            background: var(--primario);
+            color: #ffffff;
+            padding: 10px 14px;
+            border-radius: 1.3rem 1.3rem 0 0;
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: .5px;
         }
 
+        .tema span { font-size: 50px; margin: 5px auto; }
 
+        .tema p {
+            margin: 8px 0 0;
+            font-size: 13.5px;
+            color: #5b7f92;
+            line-height: 1.4;
+        }
+
+        /* ===== MENSAJE CUANDO NO HAY RESULTADOS ===== */
+        #sinResultados {
+            display: none;
+            padding: 40px 20px;
+            color: #5b7f92;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        #sinResultados span {
+            display: block;
+            font-size: 60px;
+            margin-bottom: 10px;
+        }
+
+        /* ===== RESPONSIVE ===== */
         @media screen and (min-width: 750px) {
-            #temas{
-                display: flex;
+            #temas {
                 flex-direction: row;
+                flex-wrap: wrap;          /* Las tarjetas se envuelven en filas */
+                justify-content: center;  /* Centradas cuando no llenan la fila */
                 gap: 2rem;
             }
+            #buscador { font-size: 25px; } /* Texto más grande en pantalla amplia */
         }
     </style>
 
@@ -98,9 +166,17 @@
 
 <body>
     <h1>Generador de documentos de todo tipo</h1>
-    <input type="text" id="buscador"><br><br>
-    <div id="temas">
 
+    <div id="buscador-contenedor">
+        <input type="text" id="buscador" placeholder="Buscar documento..." autocomplete="off" enterkeyhint="search">
+        <button id="btnLimpiar" type="button" aria-label="Limpiar búsqueda">✕</button>
+    </div>
+    <br>
+    <div id="temas"></div>
+
+    <div id="sinResultados">
+        <span>🔍</span>
+        No se encontró ningún documento.<br>Prueba con otro término.
     </div>
 
     <script>
@@ -109,49 +185,75 @@
             { titulo: "Compras", descripcion: "Genera el pdf de Solicitud de cotización, Cotización, Plan de compras, Orden de compra y Acta de recepción.", icono: '📑', link: 'pages/compras.html' },
         ];
         temas.sort((a, b) => a.titulo.localeCompare(b.titulo));
-        function crearTarjetas(lista) {
-            let tarjetas = document.getElementById('temas');
-            lista.forEach((tema) => {
-                let tarjeta = document.createElement('div');
-                tarjeta.className = 'tema';
 
-                tarjeta.addEventListener('click', function () {
-                    window.location.href = tema.link;
-                });
-                let titulo = document.createElement('h3');
-                titulo.textContent = tema.titulo;
-                let icono = document.createElement('span');
-                icono.textContent = tema.icono;
-                let descripcion = document.createElement('p');
-                descripcion.textContent = tema.descripcion;
-                tarjeta.append(titulo);
-                tarjeta.append(icono);
-                tarjeta.append(descripcion);
-                tarjetas.append(tarjeta);
+        const buscador = document.getElementById('buscador');
+        const btnLimpiar = document.getElementById('btnLimpiar');
+        const contenedor = document.getElementById('temas');
+        const sinResultados = document.getElementById('sinResultados');
+
+        // Pasa a minúsculas y QUITA ACENTOS:
+        // "Autoliquidación" -> "autoliquidacion", así buscar "autoliquidacion" (sin tilde) funciona igual
+        function normalizar(texto) {
+            return texto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        }
+
+        function crearTarjeta(tema) {
+            let tarjeta = document.createElement('div');
+            tarjeta.className = 'tema';
+
+            tarjeta.addEventListener('click', function () {
+                window.location.href = tema.link;
             });
-            /*let estilo = document.createElement('style');
 
-            estilo.textContent = `
-                .tema{
-                    background-color: aquamarine;
-                }
-            `;
-            document.head.appendChild(estilo);*/
-        };
+            let titulo = document.createElement('h3');
+            titulo.textContent = tema.titulo;
+            let icono = document.createElement('span');
+            icono.textContent = tema.icono;
+            let descripcion = document.createElement('p');
+            descripcion.textContent = tema.descripcion;
+
+            tarjeta.append(titulo, icono, descripcion);
+            return tarjeta;
+        }
+
+        // Dibuja la lista y muestra/oculta el mensaje de "sin resultados"
+        function renderizar(lista) {
+            contenedor.innerHTML = '';
+            lista.forEach(tema => contenedor.append(crearTarjeta(tema)));
+            sinResultados.style.display = lista.length === 0 ? 'block' : 'none';
+        }
+
+        // Filtro en vivo: busca en título Y descripción
+        function buscar() {
+            const q = normalizar(buscador.value.trim());
+            btnLimpiar.style.display = q ? 'block' : 'none';
+
+            if (!q) {
+                renderizar(temas);
+                return;
+            }
+
+            renderizar(temas.filter(tema =>
+                normalizar(tema.titulo).includes(q) ||
+                normalizar(tema.descripcion).includes(q)
+            ));
+        }
+
+        // Limpia con el botón ✕ o con la tecla Escape
+        function limpiar() {
+            buscador.value = '';
+            buscar();
+            buscador.focus();
+        }
+
+        buscador.addEventListener('input', buscar);
+        btnLimpiar.addEventListener('click', limpiar);
+        buscador.addEventListener('keydown', e => { if (e.key === 'Escape') limpiar(); });
+
         document.addEventListener("DOMContentLoaded", () => {
-            crearTarjetas(temas);
+            renderizar(temas);
         });
     </script>
-    <style>
-        .tarjetas {
-            display: flex;
-
-        }
-
-        .tarjeta {
-            background-color: aquamarine;
-        }
-    </style>
 </body>
 
 </html>

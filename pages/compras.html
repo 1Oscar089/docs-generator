@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Compras — Documentos PDF</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+
+    <style>
+        :root {
+            --primario: rgb(41, 194, 255);
+            --primario-oscuro: #0e7ba3;
+            --fondo: #f0f8fc;
+            --borde: #bfe9f9;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            background: var(--fondo);
+            font-family: "Segoe UI", Arial, sans-serif;
+            color: #14384a;
+        }
+
+        h1 {
+            color: var(--primario);
+            text-transform: uppercase;
+            font-size: 22px;
+            text-align: center;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, .15);
+        }
+
+        .form {
+            background: #ffffff;
+            border: 2px solid var(--primario);
+            border-radius: 1.5rem;
+            max-width: 980px;
+            margin: 18px auto;
+            padding: 18px 22px 22px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            box-shadow: 0 4px 14px rgba(14, 123, 163, .12);
+            transition: opacity .3s;
+        }
+
+        /* Estado bloqueado: invisible para la interacción */
+        .form.bloqueado {
+            pointer-events: none;
+            user-select: none;
+            opacity: .55;
+        }
+
+        .form h3 {
+            margin: -18px -22px 4px;
+            background: var(--primario);
+            color: #fff;
+            text-align: center;
+            padding: 10px 14px;
+            border-radius: 1.3rem 1.3rem 0 0;
+            font-size: 15px;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+        }
+
+        .nota {
+            margin: 0;
+            font-size: 12.5px;
+            font-style: italic;
+            color: #5b7f92;
+            text-align: center;
+        }
+
+        .fila {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+        }
+
+        .form-group { display: flex; flex-direction: column; gap: 4px; }
+        .form-group label { font-weight: 600; font-size: 13.5px; }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1.5px solid var(--borde);
+            border-radius: 8px;
+            font-size: 14px;
+            background: #fbfeff;
+            font-family: inherit;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primario);
+            box-shadow: 0 0 0 3px rgba(41, 194, 255, .2);
+        }
+
+        .table-wrapper {
+            border: 1.5px solid var(--borde);
+            border-radius: 10px;
+            overflow-x: auto;
+            background: #fff;
+        }
+
+        .tabla-dinamica { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 760px; }
+        .tabla-dinamica th, .tabla-dinamica td { padding: 5px 7px; border-bottom: 1px solid #e2f4fd; text-align: left; }
+        .tabla-dinamica th {
+            background: #eaf9ff;
+            color: var(--primario-oscuro);
+            text-transform: uppercase;
+            font-size: 11px;
+            font-weight: 800;
+        }
+        .tabla-dinamica td input, .tabla-dinamica td select {
+            padding: 6px 7px;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 6px;
+        }
+
+        .btn-add-row {
+            background: #eaf9ff;
+            color: var(--primario-oscuro);
+            border: 1.5px dashed var(--primario);
+            padding: 9px 14px;
+            border-radius: 10px;
+            font-weight: 800;
+            font-size: 13.5px;
+            cursor: pointer;
+            width: 100%;
+            transition: .15s;
+        }
+        .btn-add-row:hover { background: var(--primario); color: #fff; }
+
+        .btn-del {
+            background: #fee2e2;
+            color: #ef4444;
+            border: none;
+            border-radius: 6px;
+            padding: 7px 9px;
+            cursor: pointer;
+            font-size: 14px;
+            line-height: 1;
+        }
+
+        .acciones { text-align: center; margin: 26px 0 40px; }
+
+        #btnGenerar {
+            background: var(--primario);
+            color: #fff;
+            border: none;
+            border-radius: 999px;
+            padding: 12px 40px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(41, 194, 255, .4);
+            transition: transform .15s ease, box-shadow .15s ease;
+        }
+        #btnGenerar:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(41, 194, 255, .55); }
+        #btnGenerar.generando { opacity: .6; cursor: wait; transform: none; }
+
+        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; }
+        .toast {
+            background: #0e7ba3; color: white; padding: 12px 20px; border-radius: 8px;
+            margin-top: 8px; font-size: 13.5px; font-weight: 600; box-shadow: 0 4px 14px rgba(0,0,0,.25);
+        }
+        .toast.error { background: #ef4444; }
+        .toast.warning { background: #b45309; }
+
+        /* ===== MODAL DE ACCESO ===== */
+        .modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(10, 40, 60, .65);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            padding: 16px;
+        }
+        .modal-overlay.active { display: flex; }
+
+        .modal {
+            background: #fff;
+            border: 2px solid var(--primario);
+            border-radius: 1.5rem;
+            width: 100%;
+            max-width: 460px;
+            padding: 0 20px 20px;
+            box-shadow: 0 14px 34px rgba(0, 0, 0, .3);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .modal h3 {
+            margin: 0 -20px 4px;
+            background: var(--primario);
+            color: #fff;
+            text-align: center;
+            padding: 10px 14px;
+            border-radius: 1.3rem 1.3rem 0 0;
+            font-size: 15px;
+            text-transform: uppercase;
+        }
+
+        .id-box {
+            background: var(--fondo);
+            border: 2px dashed var(--primario);
+            border-radius: 10px;
+            padding: 14px;
+            text-align: center;
+        }
+        .id-box small {
+            display: block;
+            font-size: 11px;
+            color: #5b7f92;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .id-box span {
+            font-size: 30px;
+            letter-spacing: 5px;
+            font-weight: bold;
+            color: var(--primario-oscuro);
+            font-family: "Courier New", monospace;
+        }
+
+        .modal input {
+            font-size: 20px;
+            text-align: center;
+            letter-spacing: 8px;
+            font-weight: bold;
+        }
+
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            .form { padding: 14px; }
+            .form h3 { margin: -14px -14px 4px; }
+        }
+    </style>
+</head>
+
+<body>
+    <h1>GENERADOR DE DOCUMENTOS DE COMPRAS</h1>
+
+    <!-- ================= MODAL DE ACCESO (muestra SOLO el ID) ================= -->
+    <div class="modal-overlay" id="modalAcceso">
+        <div class="modal">
+            <h3>Acceso restringido</h3>
+            <p class="nota">Comunique este número al administrador para recibir su contraseña.</p>
+            <div class="id-box">
+                <small>ID de este navegador</small>
+                <span id="idNavegadorMostrado">------</span>
+            </div>
+            <input type="password" id="inputContrasena" inputmode="numeric" maxlength="6"
+                   autocomplete="off" placeholder="••••••" enterkeyhint="send">
+            <button class="btn-add-row" style="border-style: solid;" onclick="intentarAcceso()">Aceptar</button>
+        </div>
+    </div>
+
+    <form id="formCompras" onsubmit="return false;">
+
+        <!-- ================= DATOS GENERALES Y PROVEEDOR ================= -->
+        <div class="form" id="datosGenerales">
+            <h3>Datos generales y proveedor</h3>
+            <div class="fila">
+                <div class="form-group">
+                    <label for="fondoCompra">Fondo de aplicación:</label>
+                    <select id="fondoCompra">
+                        <option value="presupuesto_anual">Presupuesto Anual</option>
+                        <option value="presupuesto_civico">Presupuesto Cívico</option>
+                        <option value="otros_ingresos">Otros Ingresos</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="provNombre">Nombre del proveedor:</label>
+                    <input type="text" id="provNombre" placeholder="Ej: LIBRERIA EL ESTUDIANTE"
+                           autocomplete="off" oninput="this.value = limpiarTextoInput(this.value)">
+                </div>
+                <div class="form-group">
+                    <label for="provDireccion">Dirección del proveedor:</label>
+                    <input type="text" id="provDireccion" placeholder="Ej: BARRIO EL CENTRO, CHALATENANGO"
+                           autocomplete="off" oninput="this.value = limpiarTextoInput(this.value)">
+                </div>
+                <div class="form-group">
+                    <label for="numControl">N° Control / Factura:</label>
+                    <input type="text" id="numControl" placeholder="Ej: 00123"
+                           autocomplete="off" oninput="this.value = limpiarTextoInput(this.value)">
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= DATOS DEL CENTRO (se autoguardan en este navegador) ================= -->
+        <div class="form" id="datosCentro">
+            <h3>Datos del centro escolar (CDE)</h3>
+            <p class="nota">Se guardan automáticamente en este navegador la primera vez que genera un PDF, y se
+                precargan en las siguientes.</p>
+            <div class="fila">
+                <div class="form-group">
+                    <label for="nombreCE">Nombre del Centro Escolar:</label>
+                    <input type="text" id="nombreCE">
+                </div>
+                <div class="form-group">
+                    <label for="codigoCE">Código:</label>
+                    <input type="text" id="codigoCE" inputmode="numeric">
+                </div>
+                <div class="form-group">
+                    <label for="nombreCDE">Organismo (CDE):</label>
+                    <input type="text" id="nombreCDE" oninput="this.value = limpiarTextoInput(this.value)">
+                </div>
+            </div>
+            <div class="fila">
+                <div class="form-group">
+                    <label for="distritoCE">Distrito:</label>
+                    <input type="text" id="distritoCE">
+                </div>
+                <div class="form-group">
+                    <label for="municipioCE">Municipio:</label>
+                    <input type="text" id="municipioCE">
+                </div>
+                <div class="form-group">
+                    <label for="departamentoCE">Departamento:</label>
+                    <input type="text" id="departamentoCE">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="direccionCE">Dirección (Plan de Compras):</label>
+                <input type="text" id="direccionCE">
+            </div>
+        </div>
+
+        <!-- ================= FECHAS DEL PROCESO ================= -->
+        <div class="form" id="fechasProceso">
+            <h3>Fechas del proceso</h3>
+            <div class="fila">
+                <div class="form-group">
+                    <label for="dateSolicitud">Solicitud cotización:</label>
+                    <input type="date" id="dateSolicitud">
+                </div>
+                <div class="form-group">
+                    <label for="dateCotizacion">Cotización proveedor:</label>
+                    <input type="date" id="dateCotizacion">
+                </div>
+                <div class="form-group">
+                    <label for="datePlan">Plan de compras:</label>
+                    <input type="date" id="datePlan">
+                </div>
+                <div class="form-group">
+                    <label for="dateOrden">Orden de compra:</label>
+                    <input type="date" id="dateOrden">
+                </div>
+                <div class="form-group">
+                    <label for="dateActa">Acta de recepción:</label>
+                    <input type="date" id="dateActa">
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= DETALLE DE BIENES Y SERVICIOS ================= -->
+        <div class="form" id="detalleBienes">
+            <h3>Detalle de bienes y servicios</h3>
+            <div class="table-wrapper">
+                <table class="tabla-dinamica">
+                    <thead>
+                        <tr>
+                            <th style="width: 8%;">Cant.</th>
+                            <th style="width: 14%;">Unidad</th>
+                            <th style="width: 38%;">Descripción del producto</th>
+                            <th style="width: 12%;">P. Unit ($)</th>
+                            <th style="width: 22%;">Rubro (Plan)</th>
+                            <th style="width: 6%;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="itemsBody"></tbody>
+                </table>
+            </div>
+            <button type="button" class="btn-add-row" onclick="agregarFila()">+ Agregar fila de producto</button>
+        </div>
+
+        <!-- ================= MIEMBROS DEL CDE ================= -->
+        <div class="form" id="miembrosCDE">
+            <h3>Miembros del CDE (firmas)</h3>
+            <p class="nota">Se usan en Solicitud, Cotización, Plan de Compras, Orden y Acta. Los que deje en blanco
+                saldrán con línea para firmar a mano.</p>
+            <div class="table-wrapper">
+                <table class="tabla-dinamica">
+                    <thead>
+                        <tr>
+                            <th style="width: 34%;">Nombre completo</th>
+                            <th style="width: 16%;">N° de DUI</th>
+                            <th style="width: 24%;">Cargo principal</th>
+                            <th style="width: 20%;">Cargo secundario</th>
+                            <th style="width: 6%;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="cdeBody"></tbody>
+                </table>
+            </div>
+            <button type="button" class="btn-add-row" onclick="agregarFilaCDE()">+ Agregar miembro del CDE</button>
+        </div>
+
+    </form>
+
+    <div class="acciones">
+        <button id="btnGenerar" onclick="ejecutarGeneracion()">Generar PDF</button>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script>
+        // ==========================================================
+        // SHA-256 EN JS PURO (irreversible; imposible de deducir a mano)
+        // ==========================================================
+        function sha256(ascii) {
+            function rightRotate(value, amount) { return (value >>> amount) | (value << (32 - amount)); }
+            const mathPow = Math.pow;
+            const maxWord = mathPow(2, 32);
+            let i, j;
+            let result = '';
+            const words = [];
+            const asciiBitLength = ascii.length * 8;
+            let hash = [];
+            const k = [];
+            let primeCounter = 0;
+            const isComposite = {};
+            for (let candidate = 2; primeCounter < 64; candidate++) {
+                if (!isComposite[candidate]) {
+                    for (i = 0; i < 313; i += candidate) isComposite[i] = candidate;
+                    hash[primeCounter] = (mathPow(candidate, .5) * maxWord) | 0;
+                    k[primeCounter++] = (mathPow(candidate, 1 / 3) * maxWord) | 0;
+                }
+            }
+            ascii += '\x80';
+            while (ascii.length % 64 - 56) ascii += '\x00';
+            for (i = 0; i < ascii.length; i++) {
+                j = ascii.charCodeAt(i);
+                if (j >> 8) return '';
+                words[i >> 2] |= j << ((3 - i) % 4) * 8;
+            }
+            words[words.length] = ((asciiBitLength / maxWord) | 0);
+            words[words.length] = (asciiBitLength);
+            for (j = 0; j < words.length;) {
+                const w = words.slice(j, j += 16);
+                const oldHash = hash;
+                hash = hash.slice(0, 8);
+                for (i = 0; i < 64; i++) {
+                    const w15 = w[i - 15], w2 = w[i - 2];
+                    const a = hash[0], e = hash[4];
+                    const temp1 = hash[7]
+                        + (rightRotate(e, 6) ^ rightRotate(e, 11) ^ rightRotate(e, 25))
+                        + ((e & hash[5]) ^ ((~e) & hash[6]))
+                        + k[i]
+                        + (w[i] = (i < 16) ? w[i] : (
+                            w[i - 16]
+                            + (rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15 >>> 3))
+                            + w[i - 7]
+                            + (rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2 >>> 10))
+                        ) | 0);
+                    const temp2 = (rightRotate(a, 2) ^ rightRotate(a, 13) ^ rightRotate(a, 22))
+                        + ((a & hash[1]) ^ (a & hash[2]) ^ (hash[1] & hash[2]));
+                    hash = [(temp1 + temp2) | 0].concat(hash);
+                    hash[4] = (hash[4] + temp1) | 0;
+                }
+                for (i = 0; i < 8; i++) hash[i] = (hash[i] + oldHash[i]) | 0;
+            }
+            for (i = 0; i < 8; i++) {
+                for (j = 3; j + 1; j--) {
+                    const b = (hash[i] >> (j * 8)) & 255;
+                    result += ((b < 16) ? 0 : '') + b.toString(16);
+                }
+            }
+            return result;
+        }
+
+        // ==========================================================
+        // SALT SECRETO — DEBE SER EXACTAMENTE EL MISMO
+        // en generador_claves.html
+        // ==========================================================
+        const SALT_SECRETO = 'CDE$SV#2025::Chalatenango::Xk92mQ7f::n0se-pr3sta-l4s-cu3nt4s';
+
+        function calcularContrasena(id) {
+            const hash = sha256(SALT_SECRETO + '::' + String(id).trim());
+            return String(parseInt(hash.slice(0, 8), 16) % 1000000).padStart(6, '0');
+        }
+
+        // ==========================================================
+        // ID DEL NAVEGADOR = HUELLA FÍSICA (NO usa localStorage)
+        // Si borran datos de navegación, el ID (y la contraseña)
+        // siguen siendo EXACTAMENTE los mismos.
+        // ==========================================================
+        function canvasFingerprint() {
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = 220; canvas.height = 40;
+                const ctx = canvas.getContext('2d');
+                ctx.textBaseline = 'top';
+                ctx.font = "16px 'Arial'";
+                ctx.fillStyle = '#f60';
+                ctx.fillRect(0, 0, 100, 20);
+                ctx.fillStyle = '#069';
+                ctx.fillText('CDE-SV-\u00e1\u00e9\u00ed', 2, 2);
+                ctx.fillStyle = 'rgba(102,204,0,0.7)';
+                ctx.fillText('CDE-SV-\u00e1\u00e9\u00ed', 4, 8);
+                return canvas.toDataURL().slice(-80);
+            } catch (e) { return 'sin-canvas'; }
+        }
+
+        function calcularIdNavegador() {
+            const huella = [
+                navigator.userAgent,
+                navigator.platform || '',
+                navigator.language || '',
+                (Intl.DateTimeFormat().resolvedOptions().timeZone || ''),
+                screen.width + 'x' + screen.height + 'x' + screen.colorDepth,
+                String(navigator.hardwareConcurrency || 0),
+                canvasFingerprint()
+            ].join('||');
+            // encodeURIComponent garantiza ASCII puro para el hash
+            const hash = sha256(encodeURIComponent(huella));
+            return String(parseInt(hash.slice(0, 8), 16)); // número estable de hasta 10 dígitos
+        }
+
+        // ==========================================================
+        // SESIÓN Y BLOQUEO
+        // ==========================================================
+        const KEY_ACCESO = 'compras_acceso';
+        const KEY_CENTRO = 'compras_centro';
+        const form = document.getElementById('formCompras');
+
+        window.showToast = (msg, type = 'success') => {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = msg;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 4500);
+        };
+
+        window.limpiarTextoInput = (str) => {
+            if (!str) return "";
+            return str.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s{2,}/g, ' ').trimStart();
+        };
+
+        const formatearTextoFinal = (str) => window.limpiarTextoInput(str).trim();
+        const val = id => (document.getElementById(id) ? document.getElementById(id).value.trim() : '');
+
+        window.mascaraDuiLocal = (v) => {
+            let x = v.replace(/\D/g, '').substring(0, 9);
+            if (x.length > 8) x = x.replace(/^(\d{8})(\d)/, '$1-$2');
+            return x;
+        };
+
+        function obtenerFechaSV() {
+            const date = new Date(new Date().toLocaleString("en-US", { timeZone: "America/El_Salvador" }));
+            const yyyy = date.getFullYear();
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const dd = String(date.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        }
+
+        function bloquearApp() {
+            form.setAttribute('inert', '');   // bloquea clic, teclado y tabulación
+            form.classList.add('bloqueado');  // respaldo visual (opacity + pointer-events)
+        }
+
+        function desbloquearApp() {
+            form.removeAttribute('inert');
+            form.classList.remove('bloqueado');
+        }
+
+        window.intentarAcceso = () => {
+            const ingresada = val('inputContrasena');
+            if (ingresada === calcularContrasena(calcularIdNavegador())) {
+                localStorage.setItem(KEY_ACCESO, 'true');
+                document.getElementById('modalAcceso').classList.remove('active');
+                showToast('Acceso autorizado. No se volverá a pedir en este navegador.', 'success');
+                iniciarApp();
+            } else {
+                showToast('Contraseña incorrecta.', 'error');
+                document.getElementById('inputContrasena').value = '';
+                document.getElementById('inputContrasena').focus();
+            }
+        };
+
+        document.getElementById('inputContrasena').addEventListener('keydown', e => {
+            if (e.key === 'Enter') intentarAcceso();
+        });
+
+        // ==========================================================
+        // CENTRO: pre carga y autoguardado local
+        // ==========================================================
+        const IDS_CENTRO = ['nombreCE', 'codigoCE', 'nombreCDE', 'distritoCE', 'municipioCE', 'departamentoCE', 'direccionCE'];
+
+        function cargarCentroLocal() {
+            try {
+                const c = JSON.parse(localStorage.getItem(KEY_CENTRO)) || {};
+                const mapa = {
+                    nombreCE: c.nombre, codigoCE: c.codigo, nombreCDE: c.cde,
+                    distritoCE: c.distrito, municipioCE: c.municipio,
+                    departamentoCE: c.departamento, direccionCE: c.direccion
+                };
+                IDS_CENTRO.forEach(id => { if (mapa[id]) document.getElementById(id).value = mapa[id]; });
+            } catch (e) { /* sin datos guardados */ }
+        }
+
+        function guardarCentroLocal() {
+            const centro = {
+                nombre: val('nombreCE'), codigo: val('codigoCE'), cde: val('nombreCDE'),
+                distrito: val('distritoCE'), municipio: val('municipioCE'),
+                departamento: val('departamentoCE'), direccion: val('direccionCE')
+            };
+            localStorage.setItem(KEY_CENTRO, JSON.stringify(centro));
+        }
+
+        // ==========================================================
+        // FILAS DE PRODUCTOS
+        // ==========================================================
+        const UNITS = ["UNIDAD", "CAJA", "PAQUETE", "GALÓN", "LITRO", "DOCENA", "PLIEGO", "RESMA", "YARDA", "SERVICIO"];
+        const RUBROS = [
+            "Material educativo", "Logística del centro educativo", "Alimentación y salud escolar",
+            "Remuneraciones", "Adquisición de mobiliario", "Adquisición de equipo"
+        ];
+        const CARGOS_CDE = [
+            "Presidente propietario", "Presidente suplente",
+            "Tesorero/a propietario", "Tesorero/a suplente",
+            "Secretario/a propietario", "Secretario/a suplente",
+            "Consejal propietario docente", "Consejal suplente docente",
+            "Consejal propietario padre de familia", "Consejal suplente padre de familia",
+            "Consejal propietario alumno", "Consejal suplente alumno",
+            "Encargado de Compras", "Sin cargo"
+        ];
+
+        window.agregarFila = (datos = null) => {
+            const tbody = document.getElementById('itemsBody');
+            const tr = document.createElement('tr');
+
+            const qty = datos ? datos.qty : 1;
+            const unit = datos ? datos.unit : UNITS[0];
+            const desc = datos ? datos.desc : "";
+            const price = datos ? datos.price : "";
+            const rubro = datos ? datos.rubro : RUBROS[0];
+
+            const unitOpts = UNITS.map(u => `<option value="${u}" ${u === unit ? 'selected' : ''}>${u}</option>`).join("");
+            const rubroOpts = RUBROS.map(r => `<option value="${r}" ${r === rubro ? 'selected' : ''}>${r}</option>`).join("");
+
+            tr.innerHTML = `
+                <td><input type="number" class="it-qty" min="0.01" step="0.01" value="${qty}"></td>
+                <td><select class="it-unit">${unitOpts}</select></td>
+                <td><input type="text" class="it-desc" placeholder="Ej: RESMA DE PAPEL BOND"
+                           autocomplete="off" oninput="this.value = limpiarTextoInput(this.value)" value="${desc}"></td>
+                <td><input type="number" class="it-price" min="0" step="0.01" placeholder="0.00" value="${price}"></td>
+                <td><select class="it-rubro">${rubroOpts}</select></td>
+                <td style="text-align:center;"><button type="button" class="btn-del" onclick="this.closest('tr').remove()">✕</button></td>
+            `;
+            tbody.appendChild(tr);
+        };
+
+        window.agregarFilaCDE = (nombre = "", dui = "", cargo = "Sin cargo", cargo2 = "Sin cargo") => {
+            const container = document.getElementById('cdeBody');
+            const tr = document.createElement('tr');
+            const options = CARGOS_CDE.map(c => `<option value="${c}">${c}</option>`).join('');
+
+            tr.innerHTML = `
+                <td><input type="text" class="cde-nombre" placeholder="Nombre completo" value="${nombre}"
+                           oninput="this.value = limpiarTextoInput(this.value)"></td>
+                <td><input type="text" class="cde-dui" placeholder="00000000-0" value="${dui}" maxlength="10"
+                           oninput="this.value = mascaraDuiLocal(this.value)"></td>
+                <td><select class="cde-cargo">${options}</select></td>
+                <td><select class="cde-cargo2">${options}</select></td>
+                <td style="text-align:center;"><button type="button" class="btn-del" onclick="this.closest('tr').remove()">✕</button></td>
+            `;
+            tr.querySelector('.cde-cargo').value = CARGOS_CDE.includes(cargo) ? cargo : "Sin cargo";
+            tr.querySelector('.cde-cargo2').value = CARGOS_CDE.includes(cargo2) ? cargo2 : "Sin cargo";
+            container.appendChild(tr);
+        };
+
+        function getMiembros() {
+            return Array.from(document.querySelectorAll('#cdeBody tr')).map(tr => ({
+                nombre: formatearTextoFinal(tr.querySelector('.cde-nombre').value),
+                dui: tr.querySelector('.cde-dui').value.trim(),
+                cargo: tr.querySelector('.cde-cargo').value,
+                cargo2: tr.querySelector('.cde-cargo2').value
+            })).filter(m => m.nombre !== "");
+        }
+
+        function getTableData() {
+            const rows = Array.from(document.querySelectorAll('#itemsBody tr'));
+            return rows.map((tr, idx) => ({
+                no: idx + 1,
+                qty: parseFloat(tr.querySelector('.it-qty').value) || 0,
+                unit: tr.querySelector('.it-unit').value,
+                desc: formatearTextoFinal(tr.querySelector('.it-desc').value),
+                price: parseFloat(tr.querySelector('.it-price').value) || 0,
+                rubro: tr.querySelector('.it-rubro').value,
+                total: (parseFloat(tr.querySelector('.it-qty').value) || 0) * (parseFloat(tr.querySelector('.it-price').value) || 0)
+            })).filter(x => x.qty > 0 && x.desc !== "");
+        }
+
+        // ==========================================================
+        // BOTÓN ÚNICO: solo funciona con sesión autorizada.
+        // Ningún campo es obligatorio.
+        // ==========================================================
+        window.ejecutarGeneracion = () => {
+            if (localStorage.getItem(KEY_ACCESO) !== 'true') {
+                showToast('Ingrese la contraseña para usar el generador.', 'warning');
+                document.getElementById('modalAcceso').classList.add('active');
+                document.getElementById('inputContrasena').focus();
+                return;
+            }
+            guardarCentroLocal(); // autoguardado del centro en este navegador
+            iniciarGeneracionPDF(getTableData());
+        };
+
+        // ==========================================================
+        // ARRANQUE
+        // ==========================================================
+        function iniciarApp() {
+            agregarFila();
+            agregarFilaCDE();
+            const dateStr = obtenerFechaSV();
+            document.querySelectorAll('input[type="date"]').forEach(inp => inp.value = dateStr);
+            cargarCentroLocal();
+            desbloquearApp();
+        }
+
+        window.addEventListener('load', () => {
+            document.getElementById('idNavegadorMostrado').textContent = calcularIdNavegador();
+
+            if (localStorage.getItem(KEY_ACCESO) === 'true') {
+                iniciarApp(); // ya autorizado: no se vuelve a pedir la contraseña
+            } else {
+                bloquearApp();
+                document.getElementById('modalAcceso').classList.add('active');
+                document.getElementById('inputContrasena').focus();
+            }
+        });
+    </script>
+
+    <script>
+        if (typeof pdfMake === 'undefined') {
+            alert('pdfmake no se cargó. Revisa tu conexión a internet.');
+        }
+
+        // === PUENTE DE FUENTES LOCALES (igual que liquidacion.html) ===
+        async function vincularFuenteLocal(nombreVirtual, rutaLocal) {
+            const respuesta = await fetch(rutaLocal);
+            if (!respuesta.ok) throw new Error(`No se encontró la fuente: ${rutaLocal}`);
+            const blob = await respuesta.blob();
+            return new Promise((resolve, reject) => {
+                const lector = new FileReader();
+                lector.onloadend = () => {
+                    pdfMake.vfs[nombreVirtual] = lector.result.split(',')[1];
+                    resolve();
+                };
+                lector.onerror = reject;
+                lector.readAsDataURL(blob);
+            });
+        }
+
+        async function iniciarGeneracionPDF(items) {
+            const btn = document.getElementById('btnGenerar');
+            btn.disabled = true;
+            btn.classList.add('generando');
+            btn.textContent = 'Generando...';
+
+            try {
+                pdfMake.vfs = pdfMake.vfs || {};
+                await vincularFuenteLocal('TimesNewRoman-Regular.ttf', '../fonts/times.ttf');
+                try {
+                    await vincularFuenteLocal('TimesNewRoman-Bold.ttf', '../fonts/timesbd.ttf');
+                } catch (e) {
+                    pdfMake.vfs['TimesNewRoman-Bold.ttf'] = pdfMake.vfs['TimesNewRoman-Regular.ttf'];
+                }
+                generarPDF(items);
+            } catch (error) {
+                console.error(error);
+                alert('Error al preparar el PDF: ' + error.message + '\n\n' +
+                    'Causas posibles:\n' +
+                    '1. Abriste el HTML con doble clic (file://). Debes usar un servidor local.\n' +
+                    '2. La ruta ../fonts/times.ttf no coincide con tu carpeta.');
+            } finally {
+                btn.disabled = false;
+                btn.classList.remove('generando');
+                btn.textContent = 'Generar PDF';
+            }
+        }
+
+        // ==========================================
+        // MOTOR PDFMAKE — LETTER, TABLAS CON BORDE Y ALTO FIJO
+        // Solicitud → Cotización → Plan (horizontal) → Orden → Acta
+        // ==========================================
+        function generarPDF(items) {
+
+            pdfMake.fonts = {
+                TimesNewRoman: {
+                    normal: 'TimesNewRoman-Regular.ttf',
+                    bold: 'TimesNewRoman-Bold.ttf',
+                    italics: 'TimesNewRoman-Regular.ttf',
+                    bolditalics: 'TimesNewRoman-Bold.ttf'
+                }
+            };
+
+            // ---- Helpers lógicos ----
+            function getMember(role) {
+                const miembros = getMiembros();
+                const m = miembros.find(x => {
+                    const c1 = x.cargo ? x.cargo.toLowerCase() : "";
+                    const c2 = x.cargo2 ? x.cargo2.toLowerCase() : "";
+                    const q = role.toLowerCase();
+                    return (c1.includes(q) && !c1.includes("suplente")) ||
+                        (c2.includes(q) && !c2.includes("suplente"));
+                });
+                return m || { nombre: "_____________________", cargo: role };
+            }
+
+            function getEncargado() {
+                const miembros = getMiembros();
+                const m = miembros.find(x =>
+                    (x.cargo2 && x.cargo2.includes("Compras")) ||
+                    (x.cargo && x.cargo.includes("Compras")));
+                return m || { nombre: "_____________________", cargo: "Encargado de Compras" };
+            }
+
+            function formatDateLong(str) {
+                if (!str) return "__________";
+                const [y, m, d] = str.split('-');
+                const date = new Date(y, m - 1, d);
+                const dia = String(date.getDate()).padStart(2, '0');
+                const mes = date.toLocaleDateString('es-SV', { month: 'long' });
+                const anio = date.getFullYear();
+                return `${dia} de ${mes} de ${anio}`;
+            }
+
+            function formatDateShort(str) {
+                if (!str) return "__/__/____";
+                const [y, m, d] = str.split('-');
+                return `${d}/${m}/${y}`;
+            }
+
+            function addDays(str, days) {
+                if (!str) return "";
+                const [y, m, d] = str.split('-');
+                const date = new Date(y, m - 1, d);
+                date.setDate(date.getDate() + days);
+                return date.toISOString().split('T')[0];
+            }
+
+            // ---- Datos (los campos no son obligatorios: pueden venir vacíos) ----
+            const ce = {
+                cde: val('nombreCDE'),
+                nombre: val('nombreCE'),
+                codigo: val('codigoCE'),
+                distrito: val('distritoCE'),
+                municipio: val('municipioCE'),
+                departamento: val('departamentoCE'),
+                direccion: val('direccionCE')
+            };
+
+            const provName = formatearTextoFinal(val('provNombre'));
+            const provDir = formatearTextoFinal(val('provDireccion'));
+
+            const dSol = formatDateLong(val('dateSolicitud'));
+            const dCot = formatDateLong(val('dateCotizacion'));
+            const dLim = formatDateLong(addDays(val('dateCotizacion'), 1));
+            const dPlan = formatDateLong(val('datePlan'));
+            const dOrd = formatDateLong(val('dateOrden'));
+            const dActa = formatDateLong(val('dateActa'));
+            const dActaShort = formatDateShort(val('dateActa'));
+
+            const grandTotal = items.reduce((s, i) => s + i.total, 0);
+            const grandTotalStr = `$ ${grandTotal.toFixed(2)}`;
+
+            const presidente = getMember("Presidente propietario");
+            const encargado = getEncargado();
+
+            // ---- Layout de BORDES ----
+            const bordes = {
+                hLineWidth: () => 0.75,
+                vLineWidth: () => 0.75,
+                hLineColor: () => '#000000',
+                vLineColor: () => '#000000'
+            };
+
+            // ---- Bloques reutilizables ----
+            const titulo = (t) => ({ text: t, alignment: 'center', bold: true, fontSize: 12, margin: [0, 0, 0, 12] });
+            const derecha = (t) => ({ text: t, alignment: 'right', margin: [0, 0, 0, 10] });
+            const parrafo = (t, size = 11) => ({ text: t, alignment: 'justify', fontSize: size, lineHeight: 1.25, margin: [0, 0, 0, 8] });
+            const condicion = (t) => ({ text: t, fontSize: 11, margin: [14, 0, 0, 0] });
+
+            const etiquetasEntregaRecibe = () => ({
+                fontSize: 11,
+                table: {
+                    widths: [249, 249],
+                    body: [[{ text: 'ENTREGA:', margin: [24, 0, 0, 0] }, { text: 'RECIBE:' }]]
+                },
+                layout: 'noBorders'
+            });
+
+            const columnaFirma = (nombre, cargo, size = 11) => ({
+                stack: [
+                    { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 190, y2: 0, lineWidth: 0.75, lineColor: '#000000' }] },
+                    { text: nombre || ' ', fontSize: size, margin: [14, 3, 0, 0] },
+                    { text: cargo || ' ', fontSize: size, margin: [14, 0, 0, 0] }
+                ]
+            });
+
+            const bloqueFirmas = (n1, c1, n2, c2, size = 11) => ({
+                margin: [0, 12, 0, 0],
+                table: {
+                    widths: [249, 249],
+                    body: [[columnaFirma(n1, c1, size), columnaFirma(n2, c2, size)]]
+                },
+                layout: 'noBorders'
+            });
+
+            const FILAS_MIN = 10;
+            const rellenar = (arr, cols) => { while (arr.length < FILAS_MIN) arr.push(cols.map(() => '')); return arr; };
+
+            const filaTotal6 = ['', '', '', 'Total', '', { text: grandTotalStr, alignment: 'right' }];
+
+            const content = [];
+
+            // ============================================================
+            // DOCUMENTO 1: SOLICITUD DE COTIZACIÓN (vertical, LETTER)
+            // ============================================================
+            content.push(titulo('SOLICITUD DE COTIZACIÓN'));
+            content.push(derecha(`Lugar y fecha: ${ce.distrito}, ${ce.municipio}, ${dSol}`));
+            content.push({ text: 'Señores:', fontSize: 11, margin: [0, 0, 0, 2] });
+            content.push({ text: provName, fontSize: 11, margin: [0, 0, 0, 10] });
+            content.push(parrafo(`El suscrito presidente del Organismo de Administración Escolar: ${ce.cde}, ubicado en el Distrito de ${ce.distrito}, Municipio de ${ce.municipio}, Departamento de ${ce.departamento}, por este medio solicito cotización y especificación técnica por escrito del material o servicio abajo detallados, la cual deberá ser enviada a nuestro centro educativo a más tardar el ${dLim}; las cotizaciones que se reciban posterior a esta fecha no serán consideradas para decidir la compra.`));
+            content.push(parrafo(`Deberá presentarse las ofertas en original a nombre de CDE del centro educativo, indicándose la vigencia de la cotización, así como especificar las siguientes condiciones de compra:`));
+            content.push(condicion('1. PLAZO DE ENTREGA: inmediata'));
+            content.push(condicion('2. LUGAR DE ENTREGA: Centro Escolar'));
+            content.push(condicion('3. VIGENCIA DE LA COTIZACIÓN: 8 días'));
+            content.push(condicion('4. TIEMPO DE GARANTÍA (SI APLICA):__________________'));
+            content.push({ text: '', margin: [0, 0, 0, 6] });
+            content.push({
+                fontSize: 10,
+                table: {
+                    heights: 18,
+                    widths: [28, 60, 95, '*'],
+                    body: [
+                        [{ text: 'No.', bold: true }, { text: 'Cantidad', bold: true }, { text: 'Unidad de medida', bold: true }, { text: 'Descripción', bold: true }],
+                        ...rellenar(items.map(x => [String(x.no), String(x.qty), x.unit, x.desc]), [0, 1, 2, 3])
+                    ]
+                },
+                layout: bordes
+            });
+            content.push({ text: '', margin: [0, 0, 0, 15] });
+            content.push(etiquetasEntregaRecibe());
+            content.push(bloqueFirmas(encargado.nombre, encargado.cargo, provName, 'Proveedor'));
+            content.push({ text: '', pageBreak: 'after' });
+
+            // ============================================================
+            // DOCUMENTO 2: COTIZACIÓN (vertical, LETTER)
+            // ============================================================
+            content.push(titulo('COTIZACIÓN'));
+            content.push(derecha(`Lugar y fecha: ${provDir}, ${dCot}`));
+            content.push({ text: `Señores miembros del CDE ${ce.nombre}`, fontSize: 11, margin: [0, 0, 0, 2] });
+            content.push({ text: 'Presente', fontSize: 11, margin: [0, 0, 0, 10] });
+            content.push(parrafo(`Atendiendo la solicitud de cotización de fecha ${dSol}, suscrita por el CDE que administra el Centro Escolar ubicado en el distrito de ${ce.distrito}, Municipio de ${ce.municipio}, departamento de ${ce.departamento}, atentamente remito la oferta en original apegada a las condiciones y especificaciones de compras detalladas:`));
+            content.push({
+                fontSize: 10,
+                table: {
+                    heights: 18,
+                    widths: [25, 40, 50, '*', 60, 60],
+                    body: [
+                        [{ text: 'No.', bold: true }, { text: 'Cant.', bold: true }, { text: 'Unidad', bold: true }, { text: 'Descripción', bold: true }, { text: 'Precio U.', bold: true, alignment: 'right' }, { text: 'Total', bold: true, alignment: 'right' }],
+                        ...rellenar(items.map(x => [String(x.no), String(x.qty), x.unit, x.desc, `$${x.price.toFixed(2)}`, `$${x.total.toFixed(2)}`]), [0, 1, 2, 3, 4, 5]),
+                        filaTotal6
+                    ]
+                },
+                layout: bordes
+            });
+            content.push({ text: '', margin: [0, 0, 0, 8] });
+            content.push({ text: 'CONDICIONES:', fontSize: 11, margin: [0, 0, 0, 2] });
+            content.push(condicion('1. PLAZO DE ENTREGA: inmediata'));
+            content.push(condicion('2. LUGAR DE ENTREGA: Centro Escolar'));
+            content.push(condicion('3. VIGENCIA DE COTIZACIÓN: 8 días'));
+            content.push({ text: '', margin: [0, 0, 0, 15] });
+            content.push(etiquetasEntregaRecibe());
+            content.push(bloqueFirmas(provName, 'Proveedor', encargado.nombre, encargado.cargo));
+            content.push({ text: '', pageBreak: 'after', pageOrientation: 'landscape' });
+
+            // ============================================================
+            // DOCUMENTO 3: PLAN DE COMPRAS (HORIZONTAL, LETTER)
+            // ============================================================
+            content.push({ text: 'PLAN DE COMPRAS', alignment: 'center', bold: true, fontSize: 12, margin: [0, 0, 0, 10] });
+            content.push({ text: `ORGANISMO DE ADMINISTRACIÓN ESCOLAR: CDE      NOMBRE DEL C.E.: ${ce.nombre}`, alignment: 'center', fontSize: 10 });
+            content.push({ text: `CÓDIGO: ${ce.codigo}      DEPARTAMENTO: ${ce.departamento}      MUNICIPIO: ${ce.municipio}      DISTRITO: ${ce.distrito}`, alignment: 'center', fontSize: 10 });
+            content.push({ text: `DIRECCIÓN: ${ce.direccion}`, alignment: 'center', fontSize: 10 });
+            content.push({ text: `FECHA: ${dPlan}`, alignment: 'center', fontSize: 10, margin: [0, 0, 0, 12] });
+            content.push({
+                fontSize: 9,
+                table: {
+                    heights: 15,
+                    widths: [110, '*', 34, 50, 60, 60, 70],
+                    body: [
+                        ['Área y rubros', 'Descripción', 'Cant.', 'Unidad', 'Precio U.', 'Total', 'Fecha compra'],
+                        ...rellenar(items.map(x => [x.rubro, x.desc, String(x.qty), x.unit, `$${x.price.toFixed(2)}`, `$${x.total.toFixed(2)}`, dActaShort]), [0, 1, 2, 3, 4, 5, 6]),
+                        ['', '', '', '', { text: 'Total', alignment: 'right', bold: true }, { text: grandTotalStr, alignment: 'right', bold: true }, '']
+                    ]
+                },
+                layout: bordes
+            });
+            content.push({ text: '', margin: [0, 0, 0, 15] });
+
+            const roles = [
+                "Presidente propietario", "Tesorero/a propietario", "Consejal propietario docente",
+                "Secretario/a propietario", "Consejal propietario padre de familia", "Consejal propietario padre de familia",
+                "Consejal propietario alumno", "Consejal propietario alumno"
+            ];
+            const keys = ["presidente", "tesorero", "docente", "secretario", "padre", "padre", "alumno", "alumno"];
+            let pool = getMiembros();
+
+            const filasFirmas = roles.map((role, i) => {
+                let nombre = "_____________________";
+                const idx = pool.findIndex(m => {
+                    const c1 = (m.cargo || "").toLowerCase();
+                    const c2 = (m.cargo2 || "").toLowerCase();
+                    return (c1.includes(keys[i]) && !c1.includes("suplente")) ||
+                        (c2.includes(keys[i]) && !c2.includes("suplente"));
+                });
+                if (idx >= 0) { nombre = pool[idx].nombre; pool.splice(idx, 1); }
+                return [role, nombre, "F: _____________________"];
+            });
+
+            content.push({
+                fontSize: 10,
+                table: {
+                    heights: 14,
+                    widths: [270, 270, 138],
+                    body: [[{ text: 'CARGO', bold: true }, { text: 'NOMBRE', bold: true }, { text: 'FIRMA', bold: true }], ...filasFirmas]
+                },
+                layout: 'noBorders'
+            });
+            content.push({ text: '', pageBreak: 'after', pageOrientation: 'portrait' });
+
+            // ============================================================
+            // DOCUMENTO 4: ORDEN DE COMPRA (vertical, LETTER)
+            // ============================================================
+            content.push(titulo('ORDEN DE COMPRA DE BIENES Y SERVICIOS N°'));
+            content.push(derecha(`Lugar y fecha: ${ce.distrito}, ${ce.municipio}, ${dOrd}`));
+            content.push({ text: 'Señores:', fontSize: 11, margin: [0, 0, 0, 2] });
+            content.push({ text: provName, fontSize: 11, margin: [0, 0, 0, 10] });
+            content.push(parrafo(`Por este medio se comunica que el CDE del ${ce.nombre} ha decidido adquirir en esa empresa los bienes o servicios que más adelante se detallan, de acuerdo a los precios y condiciones de su oferta.`));
+            content.push(parrafo(`Los bienes deberán entregarse el día ${dActa}, de 8:00 a 12:00 horas.`));
+            content.push({
+                fontSize: 10,
+                table: {
+                    heights: 18,
+                    widths: [24, 40, 52, '*', 62, 62],
+                    body: [
+                        [{ text: 'No.', bold: true }, { text: 'Cant.', bold: true }, { text: 'Unidad', bold: true }, { text: 'Descripción', bold: true }, { text: 'Precio U.', bold: true, alignment: 'right' }, { text: 'Total', bold: true, alignment: 'right' }],
+                        ...rellenar(items.map(x => [String(x.no), String(x.qty), x.unit, x.desc, `$${x.price.toFixed(2)}`, `$${x.total.toFixed(2)}`]), [0, 1, 2, 3, 4, 5]),
+                        filaTotal6
+                    ]
+                },
+                layout: bordes
+            });
+            content.push({ text: '', margin: [0, 0, 0, 8] });
+            content.push({ text: `Presentar factura a nombre de: ${ce.cde}`, fontSize: 11, margin: [0, 0, 0, 20] });
+            content.push(etiquetasEntregaRecibe());
+            content.push(bloqueFirmas(encargado.nombre, encargado.cargo, provName, 'Proveedor'));
+            content.push({ text: '', pageBreak: 'after' });
+
+            // ============================================================
+            // DOCUMENTO 5: ACTA DE RECEPCIÓN (vertical, LETTER)
+            // ============================================================
+            content.push(titulo('ACTA DE RECEPCIÓN DE BIENES N°__'));
+            content.push(parrafo(`EL ORGANISMO DE ADMINISTRACIÓN ESCOLAR: CDE QUE ADMINISTRA EL CENTRO EDUCATIVO: ${ce.nombre.toUpperCase()}, CON CÓDIGO: ${ce.codigo}, UBICADO EN EL DISTRITO: ${ce.distrito.toUpperCase()}, MUNICIPIO: ${ce.municipio.toUpperCase()}, DEPARTAMENTO: ${ce.departamento.toUpperCase()}`, 10));
+            content.push(parrafo(`QUE EN FECHA ${dActa}, El PRESIDENTE DEL CENTRO ESCOLAR Y EL SUSCRITO HACE CONSTAR QUE HA RECIBIDO DE ACUERDO A LO CONVENIDO CON ${provName}, LOS BIENES QUE A CONTINUACIÓN SE DETALLAN :`, 10));
+
+            content.push({
+                fontSize: 10,
+                table: {
+                    heights: 18,
+                    widths: [24, '*', 52, 75, 75],
+                    body: [
+                        [{ text: 'No.', bold: true }, { text: 'Descripción', bold: true }, { text: 'Cantidad', bold: true }, { text: 'Precio U.', bold: true, alignment: 'right' }, { text: 'Total', bold: true, alignment: 'right' }],
+                        ...rellenar(items.map(x => [String(x.no), x.desc, String(x.qty), `$${x.price.toFixed(2)}`, `$${x.total.toFixed(2)}`]), [0, 1, 2, 3, 4]),
+                        ['', '', '', { text: 'Total', alignment: 'right' }, { text: grandTotalStr, alignment: 'right' }]
+                    ]
+                },
+                layout: bordes
+            });
+            content.push({ text: '', margin: [0, 0, 0, 20] });
+
+            content.push({
+                fontSize: 10,
+                table: {
+                    widths: [249, 249],
+                    body: [[{ text: 'RECIBIDO POR:', margin: [24, 0, 0, 0] }, { text: 'ENTREGADO POR:' }]]
+                },
+                layout: 'noBorders'
+            });
+            content.push(bloqueFirmas(presidente.nombre, presidente.cargo, provName, 'Proveedor', 10));
+
+            const docDefinition = {
+                pageSize: 'LETTER',
+                pageMargins: [57, 57, 57, 57],
+                defaultStyle: { font: 'TimesNewRoman', fontSize: 11 },
+                content
+            };
+
+            pdfMake.createPdf(docDefinition).download(`Compras_${Date.now()}.pdf`);
+        }
+    </script>
+</body>
+
+</html>

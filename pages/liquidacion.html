@@ -4,37 +4,217 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Liquidación con Fuentes Locales</title>
+    <title>Generador de Documentación — Autoliquidación MINED</title>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+
     <style>
+        :root {
+            --primario: rgb(41, 194, 255);
+            --primario-oscuro: #0e7ba3;
+            --fondo: #f0f8fc;
+            --borde: #bfe9f9;
+        }
+
+        * { box-sizing: border-box; }
+
         body {
-            margin: 20px;
-            text-align: center;
+            margin: 0;
+            padding: 20px;
+            background: var(--fondo);
+            font-family: "Segoe UI", Arial, sans-serif;
+            color: #14384a;
         }
 
         h1 {
-            color: rgb(41, 194, 255);
+            color: var(--primario);
             text-transform: uppercase;
             font-size: 22px;
+            text-align: center;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, .15);
+        }
+
+        /* Estado bloqueado del contenido */
+        #contenidoApp.bloqueado {
+            pointer-events: none;
+            user-select: none;
+            opacity: .55;
         }
 
         .form {
-            background: #72ecff;
+            background: #ffffff;
+            border: 2px solid var(--primario);
+            border-radius: 1.5rem;
+            max-width: 920px;
+            margin: 18px auto;
+            padding: 18px 22px 22px;
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            border-radius: 1.5rem;
-            padding: 10px;
-            justify-content: center;
-            align-items: center;
+            gap: 12px;
+            box-shadow: 0 4px 14px rgba(14, 123, 163, .12);
         }
 
-        .form-group {
+        .form h3 {
+            margin: -18px -22px 4px;
+            background: var(--primario);
+            color: #fff;
+            text-align: center;
+            padding: 10px 14px;
+            border-radius: 1.3rem 1.3rem 0 0;
+            font-size: 15px;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+        }
+
+        .subtitulo {
+            margin: 6px 0 0;
+            padding-bottom: 4px;
+            border-bottom: 2px dashed var(--borde);
+            color: var(--primario-oscuro);
+            font-size: 13px;
+            text-transform: uppercase;
+        }
+
+        .nota {
+            margin: 0;
+            font-size: 12.5px;
+            font-style: italic;
+            color: #5b7f92;
+            text-align: center;
+        }
+
+        .form-group { display: flex; flex-direction: column; gap: 4px; }
+
+        .form-group label { font-weight: 600; font-size: 13.5px; }
+
+        .fila {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1.5px solid var(--borde);
+            border-radius: 8px;
+            font-size: 14px;
+            background: #fbfeff;
+            font-family: inherit;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primario);
+            box-shadow: 0 0 0 3px rgba(41, 194, 255, .2);
+        }
+
+        input[readonly] {
+            background: #eaf6fb;
+            font-weight: bold;
+            text-align: right;
+            color: var(--primario-oscuro);
+        }
+
+        textarea { resize: vertical; min-height: 60px; }
+
+        .acciones { text-align: center; margin: 26px 0 40px; }
+
+        #btnGenerar {
+            background: var(--primario);
+            color: #fff;
+            border: none;
+            border-radius: 999px;
+            padding: 12px 34px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(41, 194, 255, .4);
+            transition: transform .15s ease, box-shadow .15s ease;
+        }
+
+        #btnGenerar:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(41, 194, 255, .55); }
+        #btnGenerar:disabled { opacity: .6; cursor: wait; transform: none; }
+
+        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; }
+        .toast {
+            background: #0e7ba3; color: white; padding: 12px 20px; border-radius: 8px;
+            margin-top: 8px; font-size: 13.5px; font-weight: 600; box-shadow: 0 4px 14px rgba(0,0,0,.25);
+        }
+        .toast.error { background: #ef4444; }
+        .toast.warning { background: #b45309; }
+
+        /* ===== MODAL DE ACCESO ===== */
+        .modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(10, 40, 60, .65);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            padding: 16px;
+        }
+        .modal-overlay.active { display: flex; }
+
+        .modal {
+            background: #fff;
+            border: 2px solid var(--primario);
+            border-radius: 1.5rem;
+            width: 100%;
+            max-width: 460px;
+            padding: 0 20px 20px;
+            box-shadow: 0 14px 34px rgba(0, 0, 0, .3);
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 12px;
+        }
+
+        .modal h3 {
+            margin: 0 -20px 4px;
+            background: var(--primario);
+            color: #fff;
+            text-align: center;
+            padding: 10px 14px;
+            border-radius: 1.3rem 1.3rem 0 0;
+            font-size: 15px;
+            text-transform: uppercase;
+        }
+
+        .id-box {
+            background: var(--fondo);
+            border: 2px dashed var(--primario);
+            border-radius: 10px;
+            padding: 14px;
+            text-align: center;
+        }
+        .id-box small {
+            display: block;
+            font-size: 11px;
+            color: #5b7f92;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .id-box span {
+            font-size: 30px;
+            letter-spacing: 5px;
+            font-weight: bold;
+            color: var(--primario-oscuro);
+            font-family: "Courier New", monospace;
+        }
+
+        .modal input {
+            font-size: 20px;
+            text-align: center;
+            letter-spacing: 8px;
+            font-weight: bold;
+        }
+
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            .form { padding: 14px; }
+            .form h3 { margin: -14px -14px 4px; }
         }
     </style>
 </head>
@@ -42,86 +222,566 @@
 <body>
     <h1>GENERADOR DE DOCUMENTACIÓN AUTOLIQUIDACIÓN</h1>
 
-    <div class="form">
-        <div class="form-group">
-            <label for="rubro">Rubro: </label><input type="text" id="rubro">
+    <!-- ================= MODAL DE ACCESO (muestra SOLO el ID) ================= -->
+    <div class="modal-overlay" id="modalAcceso">
+        <div class="modal">
+            <h3>Acceso restringido</h3>
+            <p class="nota">Comunique este número al administrador para recibir su contraseña.</p>
+            <div class="id-box">
+                <small>ID de este navegador</small>
+                <span id="idNavegadorMostrado">------</span>
+            </div>
+            <input type="password" id="inputContrasena" inputmode="numeric" maxlength="6"
+                   autocomplete="off" placeholder="••••••" enterkeyhint="send">
+            <button class="form-group" style="background: var(--primario); color:#fff; border:none; border-radius:999px; padding:11px; font-weight:bold; font-size:15px; cursor:pointer;" onclick="intentarAcceso()">Aceptar</button>
         </div>
-        <div class="form-group">
-            <label for="anio">Año: </label><input type="number" id="anio">
-        </div>
-        <div class="form-group">
-            <label for="fuente">Fuente de financiamiento: </label><input type="text" id="fuente">
-        </div>
-        
     </div>
 
-    <div class="form" id="datosOAE">
-        <h3>DATOS DEL ORGANISMO DE ADMINISTRACIÓN ESCOLAR</h3>
-        <div class="form-group">
-            <label for="nombreEscuela">Nombre del Centro Escolar: </label><input type="text" id="nombreEscuela">
-        </div>
-        <div class="form-group">
-            <label for="codigoEscuela">Código: </label><input type="number" id="codigoEscuela">
-        </div>
-        <div class="form-group">
-            <label for="ubicacion">Ubicación</label><input type="text" id="ubicacion">
-        </div>
-        <div class="form-group">
-            <label for="nit">NIT: </label><input type="text" id="nit">
-        </div>
-    </div>
-    <br><br>
-    <div class="form" id="montos">
-        <h3>MONTOS Y FECHAS</h3>
-        <P>Llenar en orden de arriba a abajo, si no cubre todos dejar en blanco, no colocar fechas donde no recibio
-            monto</P>
-        <div class="form-group">
-            <label for="monto1">Monto:</label><input type="number" id="monto1" class="sumar"><label
-                for="fechaMonto1">Fecha:
-            </label><input type="date" id="fechaMonto1">
-        </div>
-        <div class="form-group">
-            <label for="monto2">Monto:</label><input type="number" id="monto2" class="sumar"><label
-                for="fechaMonto2">Fecha:
-            </label><input type="date" id="fechaMonto2">
-        </div>
-        <div class="form-group">
-            <label for="monto3">Monto:</label><input type="number" id="monto3" class="sumar"><label
-                for="fechaMonto3">Fecha:
-            </label><input type="date" id="fechaMonto3">
-        </div>
-        <div class="form-group">
-            <label for="monto4">Monto:</label><input type="number" id="monto4" class="sumar"><label
-                for="fechaMonto4">Fecha:
-            </label><input type="date" id="fechaMonto4">
-        </div>
-        <div class="form-group">
-            <label for="monto5">Monto:</label><input type="number" id="monto5" class="sumar"><label
-                for="fechaMonto5">Fecha:
-            </label><input type="date" id="fechaMonto5">
-        </div>
-        <div class="form-group">
-            <label for="monto6">Monto:</label><input type="number" id="monto6" class="sumar"><label
-                for="fechaMonto6">Fecha:
-            </label><input type="date" id="fechaMonto6">
-        </div>
-        <div class="form-group">
-            <textarea id="total" readonly value="0"></textarea>
-        </div>
-        <br>
-    </div>
+    <div id="contenidoApp">
 
-    <h2>Generar Liquidación</h2>
-    <button id="btnGenerar" onclick="iniciarGeneracionPDF()">Generar PDF</button>
+        <!-- ================= SECCIÓN 1: DATOS GENERALES ================= -->
+        <div class="form" id="datosGenerales">
+            <h3>Datos generales</h3>
+            <div class="fila">
+                <div class="form-group">
+                    <label for="rubro">Rubro:</label>
+                    <input type="text" id="rubro" placeholder="Ej. 290-G02700-02-01">
+                </div>
+                <div class="form-group">
+                    <label for="anio">Año:</label>
+                    <input type="number" id="anio" placeholder="Ej. 2025">
+                </div>
+                <div class="form-group">
+                    <label for="fuente">Fuente de financiamiento:</label>
+                    <input type="text" id="fuente">
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= SECCIÓN 2: ORGANISMO DE ADMINISTRACIÓN ESCOLAR ================= -->
+        <div class="form" id="datosOAE">
+            <h3>Datos del Organismo de Administración Escolar</h3>
+            <div class="fila">
+                <div class="form-group">
+                    <label for="nombreEscuela">Nombre del Centro Escolar:</label>
+                    <input type="text" id="nombreEscuela">
+                </div>
+                <div class="form-group">
+                    <label for="codigoEscuela">Código:</label>
+                    <input type="number" id="codigoEscuela">
+                </div>
+                <div class="form-group">
+                    <label for="ubicacion">Ubicación:</label>
+                    <input type="text" id="ubicacion">
+                </div>
+                <div class="form-group">
+                    <label for="nit">NIT:</label>
+                    <input type="text" id="nit">
+                </div>
+            </div>
+
+            <h4 class="subtitulo">Dirección</h4>
+            <div class="fila">
+                <div class="form-group">
+                    <label for="departamento">Departamento:</label>
+                    <input type="text" id="departamento" placeholder="Ej. Chalatenango">
+                </div>
+                <div class="form-group">
+                    <label for="municipio">Municipio:</label>
+                    <input type="text" id="municipio">
+                </div>
+                <div class="form-group">
+                    <label for="canton">Cantón:</label>
+                    <input type="text" id="canton">
+                </div>
+                <div class="form-group">
+                    <label for="caserio">Caserío:</label>
+                    <input type="text" id="caserio">
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= SECCIÓN 3: DATOS BANCARIOS Y FIRMANTES ================= -->
+        <div class="form" id="datosBancarios">
+            <h3>Datos bancarios</h3>
+            <div class="fila">
+                <div class="form-group">
+                    <label for="banco">Nombre del banco:</label>
+                    <input type="text" id="banco">
+                </div>
+                <div class="form-group">
+                    <label for="cuentaCorriente">Cuenta corriente No.:</label>
+                    <input type="text" id="cuentaCorriente">
+                </div>
+                <div class="form-group">
+                    <label for="nombreCuenta">Nombre de la cuenta corriente:</label>
+                    <input type="text" id="nombreCuenta">
+                </div>
+            </div>
+
+            <h4 class="subtitulo">Nombres de los firmantes autorizados en la cuenta</h4>
+            <div class="fila">
+                <div class="form-group">
+                    <label for="nombrePresidente">Presidente(a):</label>
+                    <input type="text" id="nombrePresidente">
+                </div>
+                <div class="form-group">
+                    <label for="nombreTesorero">Tesorero(a):</label>
+                    <input type="text" id="nombreTesorero">
+                </div>
+                <div class="form-group">
+                    <label for="nombreConcejal">Concejal de maestros:</label>
+                    <input type="text" id="nombreConcejal">
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= SECCIÓN 4: MONTOS Y FECHAS (TRANSFERENCIAS) ================= -->
+        <div class="form" id="montos">
+            <h3>Montos y fechas de las transferencias recibidas</h3>
+            <p class="nota">Llenar en orden de arriba a abajo. Si no cubre todos, dejar en blanco; no colocar fechas donde
+                no recibió monto.</p>
+
+            <div class="fila">
+                <div class="form-group">
+                    <label for="monto1">Monto 1 ($):</label>
+                    <input type="number" id="monto1" class="sumar" step="any" min="0" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="fechaMonto1">Fecha 1:</label>
+                    <input type="date" id="fechaMonto1">
+                </div>
+            </div>
+            <div class="fila">
+                <div class="form-group">
+                    <label for="monto2">Monto 2 ($):</label>
+                    <input type="number" id="monto2" class="sumar" step="any" min="0" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="fechaMonto2">Fecha 2:</label>
+                    <input type="date" id="fechaMonto2">
+                </div>
+            </div>
+            <div class="fila">
+                <div class="form-group">
+                    <label for="monto3">Monto 3 ($):</label>
+                    <input type="number" id="monto3" class="sumar" step="any" min="0" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="fechaMonto3">Fecha 3:</label>
+                    <input type="date" id="fechaMonto3">
+                </div>
+            </div>
+            <div class="fila">
+                <div class="form-group">
+                    <label for="monto4">Monto 4 ($):</label>
+                    <input type="number" id="monto4" class="sumar" step="any" min="0" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="fechaMonto4">Fecha 4:</label>
+                    <input type="date" id="fechaMonto4">
+                </div>
+            </div>
+            <div class="fila">
+                <div class="form-group">
+                    <label for="monto5">Monto 5 ($):</label>
+                    <input type="number" id="monto5" class="sumar" step="any" min="0" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="fechaMonto5">Fecha 5:</label>
+                    <input type="date" id="fechaMonto5">
+                </div>
+            </div>
+            <div class="fila">
+                <div class="form-group">
+                    <label for="monto6">Monto 6 ($):</label>
+                    <input type="number" id="monto6" class="sumar" step="any" min="0" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="fechaMonto6">Fecha 6:</label>
+                    <input type="date" id="fechaMonto6">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="total">TOTAL RECIBIDO (automático):</label>
+                <input type="text" id="total" readonly placeholder="$0.00">
+            </div>
+        </div>
+
+        <!-- ================= SECCIÓN 5: CHEQUES ================= -->
+        <div class="form" id="datosCheques">
+            <h3>Cheques utilizados</h3>
+            <div class="fila">
+                <div class="form-group">
+                    <label for="chequeInicio">Cheques utilizados — DEL N°:</label>
+                    <input type="text" id="chequeInicio" placeholder="Ej. 000125">
+                </div>
+                <div class="form-group">
+                    <label for="chequeFin">AL N°:</label>
+                    <input type="text" id="chequeFin" placeholder="Ej. 000142">
+                </div>
+                <div class="form-group">
+                    <label for="fechaUltimoCheque">Fecha del último cheque utilizado:</label>
+                    <input type="date" id="fechaUltimoCheque">
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= SECCIÓN 6: GASTOS POR RUBRO ================= -->
+        <div class="form" id="gastosRubro">
+            <h3>Gastos / inversiones por rubro</h3>
+            <p class="nota">Cada gasto detallado (1.1, 1.2, 2.1...) se anota como VALOR PARCIAL. Los totales de rubro,
+                el total invertido en todos los rubros y el saldo se calculan automáticamente y van en VALOR TOTAL.</p>
+
+            <h4 class="subtitulo">Rubro Nº 1 — Gastos de operación</h4>
+            <div class="fila">
+                <div class="form-group">
+                    <label for="inv11">1.1 Material educativo ($):</label>
+                    <input type="number" id="inv11" class="rubro1" step="any" min="0" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="inv12">1.2 Operación logística del centro ($):</label>
+                    <input type="number" id="inv12" class="rubro1" step="any" min="0" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="inv13">1.3 Alimentación escolar ($):</label>
+                    <input type="number" id="inv13" class="rubro1" step="any" min="0" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="inv15">1.5 Remuneraciones ($):</label>
+                    <input type="number" id="inv15" class="rubro1" step="any" min="0" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="inv16">1.6 Gastos de graduación ($):</label>
+                    <input type="number" id="inv16" class="rubro1" step="any" min="0" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="totalRubro1">TOTAL RUBRO Nº 1 (automático):</label>
+                    <input type="text" id="totalRubro1" readonly placeholder="$0.00">
+                </div>
+            </div>
+
+            <h4 class="subtitulo">Rubro Nº 2 — Inversiones</h4>
+            <div class="fila">
+                <div class="form-group">
+                    <label for="inv21">2.1 Adquisición de equipo ($):</label>
+                    <input type="number" id="inv21" class="rubro2" step="any" min="0" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="inv22">2.2 Adquisición de mobiliario ($):</label>
+                    <input type="number" id="inv22" class="rubro2" step="any" min="0" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="totalRubro2">TOTAL RUBRO Nº 2 (automático):</label>
+                    <input type="text" id="totalRubro2" readonly placeholder="$0.00">
+                </div>
+            </div>
+
+            <h4 class="subtitulo">Resumen de la liquidación</h4>
+            <div class="fila">
+                <div class="form-group">
+                    <label for="menosRubros">MENOS rubros de operación ($):</label>
+                    <input type="number" id="menosRubros" step="any" min="0" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="totalMontoInvertido">TOTAL MONTO INVERTIDO ($):</label>
+                    <input type="number" id="totalMontoInvertido" step="any" min="0" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="totalInvertidoTodos">TOTAL INVERTIDO EN TODOS LOS RUBROS (automático):</label>
+                    <input type="text" id="totalInvertidoTodos" readonly placeholder="$0.00">
+                </div>
+                <div class="form-group">
+                    <label for="saldo">SALDO: recibido − invertido (automático):</label>
+                    <input type="text" id="saldo" readonly placeholder="$0.00">
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= SECCIÓN 7: INFORME DE RENDICIÓN DE CUENTAS (PÁGINA 5) ================= -->
+        <div class="form" id="rendicionCuentas">
+            <h3>Informe de rendición de cuentas (página 5)</h3>
+
+            <h4 class="subtitulo">Población beneficiada</h4>
+            <div class="fila">
+                <div class="form-group">
+                    <label for="ninos">Niños:</label>
+                    <input type="number" id="ninos" min="0">
+                </div>
+                <div class="form-group">
+                    <label for="ninas">Niñas:</label>
+                    <input type="number" id="ninas" min="0">
+                </div>
+                <div class="form-group">
+                    <label for="totalBeneficiados">TOTAL (automático):</label>
+                    <input type="text" id="totalBeneficiados" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="maestros">Maestros:</label>
+                    <input type="number" id="maestros" min="0">
+                </div>
+                <div class="form-group">
+                    <label for="familias">Familias:</label>
+                    <input type="number" id="familias" min="0">
+                </div>
+            </div>
+
+            <h4 class="subtitulo">Beneficios y cumplimiento</h4>
+            <div class="form-group">
+                <label for="beneficios">Beneficios alcanzados:</label>
+                <textarea id="beneficios" rows="3" placeholder="Describa los beneficios alcanzados..."></textarea>
+            </div>
+            <div class="form-group">
+                <label for="objetivos">Cumplimiento de objetivos y metas:</label>
+                <textarea id="objetivos" rows="3" placeholder="Describa el cumplimiento de objetivos y metas..."></textarea>
+            </div>
+
+            <h4 class="subtitulo">Fecha del acta</h4>
+            <div class="fila">
+                <div class="form-group">
+                    <label for="diaActa">Día:</label>
+                    <input type="number" id="diaActa" min="1" max="31" placeholder="Ej. 15">
+                </div>
+                <div class="form-group">
+                    <label for="mesActa">Mes:</label>
+                    <input type="text" id="mesActa" placeholder="Ej. julio">
+                </div>
+                <div class="form-group">
+                    <label for="anioActa">Año:</label>
+                    <input type="number" id="anioActa" placeholder="Ej. 2025">
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= SECCIÓN 8: USO DE LA DDE (OPCIONAL) ================= -->
+        <div class="form" id="usoDDE">
+            <h3>Uso de la Dirección Departamental (opcional)</h3>
+            <p class="nota">Corresponde a los apartados 5 y 6 del formulario. Puede dejarse en blanco.</p>
+
+            <h4 class="subtitulo">Apartado 5 — Reembolsos</h4>
+            <div class="fila">
+                <div class="form-group">
+                    <label for="reembolso1">1er reembolso ($):</label>
+                    <input type="number" id="reembolso1" step="any" min="0" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="chequeReembolso1">No. de cheque:</label>
+                    <input type="text" id="chequeReembolso1">
+                </div>
+                <div class="form-group">
+                    <label for="fechaReembolso1">Fecha:</label>
+                    <input type="date" id="fechaReembolso1">
+                </div>
+            </div>
+            <div class="fila">
+                <div class="form-group">
+                    <label for="reembolso2">2do reembolso ($):</label>
+                    <input type="number" id="reembolso2" step="any" min="0" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="chequeReembolso2">No. de cheque:</label>
+                    <input type="text" id="chequeReembolso2">
+                </div>
+                <div class="form-group">
+                    <label for="fechaReembolso2">Fecha:</label>
+                    <input type="date" id="fechaReembolso2">
+                </div>
+            </div>
+
+            <h4 class="subtitulo">Apartado 6 — Recepción del formulario</h4>
+            <div class="fila">
+                <div class="form-group">
+                    <label for="fechaLiquidacion">Fecha de liquidación:</label>
+                    <input type="date" id="fechaLiquidacion">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="observaciones">Observaciones (se imprimen en la página 4):</label>
+                <textarea id="observaciones" rows="3"></textarea>
+            </div>
+        </div>
+
+        <div class="acciones">
+            <button id="btnGenerar" onclick="iniciarGeneracionPDF()">Generar PDF</button>
+        </div>
+
+    </div><!-- /contenidoApp -->
+
+    <div id="toast-container"></div>
 
     <script>
+        // ==========================================================
+        // SHA-256 EN JS PURO (irreversible; imposible de deducir a mano)
+        // ==========================================================
+        function sha256(ascii) {
+            function rightRotate(value, amount) { return (value >>> amount) | (value << (32 - amount)); }
+            const mathPow = Math.pow;
+            const maxWord = mathPow(2, 32);
+            let i, j;
+            let result = '';
+            const words = [];
+            const asciiBitLength = ascii.length * 8;
+            let hash = [];
+            const k = [];
+            let primeCounter = 0;
+            const isComposite = {};
+            for (let candidate = 2; primeCounter < 64; candidate++) {
+                if (!isComposite[candidate]) {
+                    for (i = 0; i < 313; i += candidate) isComposite[i] = candidate;
+                    hash[primeCounter] = (mathPow(candidate, .5) * maxWord) | 0;
+                    k[primeCounter++] = (mathPow(candidate, 1 / 3) * maxWord) | 0;
+                }
+            }
+            ascii += '\x80';
+            while (ascii.length % 64 - 56) ascii += '\x00';
+            for (i = 0; i < ascii.length; i++) {
+                j = ascii.charCodeAt(i);
+                if (j >> 8) return '';
+                words[i >> 2] |= j << ((3 - i) % 4) * 8;
+            }
+            words[words.length] = ((asciiBitLength / maxWord) | 0);
+            words[words.length] = (asciiBitLength);
+            for (j = 0; j < words.length;) {
+                const w = words.slice(j, j += 16);
+                const oldHash = hash;
+                hash = hash.slice(0, 8);
+                for (i = 0; i < 64; i++) {
+                    const w15 = w[i - 15], w2 = w[i - 2];
+                    const a = hash[0], e = hash[4];
+                    const temp1 = hash[7]
+                        + (rightRotate(e, 6) ^ rightRotate(e, 11) ^ rightRotate(e, 25))
+                        + ((e & hash[5]) ^ ((~e) & hash[6]))
+                        + k[i]
+                        + (w[i] = (i < 16) ? w[i] : (
+                            w[i - 16]
+                            + (rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15 >>> 3))
+                            + w[i - 7]
+                            + (rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2 >>> 10))
+                        ) | 0);
+                    const temp2 = (rightRotate(a, 2) ^ rightRotate(a, 13) ^ rightRotate(a, 22))
+                        + ((a & hash[1]) ^ (a & hash[2]) ^ (hash[1] & hash[2]));
+                    hash = [(temp1 + temp2) | 0].concat(hash);
+                    hash[4] = (hash[4] + temp1) | 0;
+                }
+                for (i = 0; i < 8; i++) hash[i] = (hash[i] + oldHash[i]) | 0;
+            }
+            for (i = 0; i < 8; i++) {
+                for (j = 3; j + 1; j--) {
+                    const b = (hash[i] >> (j * 8)) & 255;
+                    result += ((b < 16) ? 0 : '') + b.toString(16);
+                }
+            }
+            return result;
+        }
+
+        // ==========================================================
+        // SALT PROPIO DE ESTE PROYECTO (AUTOLIQUIDACIÓN)
+        // Diferente al de compras y al de los demás proyectos.
+        // Debe coincidir EXACTAMENTE con la entrada "Autoliquidación"
+        // de tu generador_claves.html
+        // ==========================================================
+        const SALT_SECRETO = 'LIQ$SV#2025::Chalatenango::Wt83kR5h::4ut0l1qu1d4c10n-m1n3d';
+
+        function calcularContrasena(id) {
+            const hash = sha256(SALT_SECRETO + '::' + String(id).trim());
+            return String(parseInt(hash.slice(0, 8), 16) % 1000000).padStart(6, '0');
+        }
+
+        // ==========================================================
+        // ID DEL NAVEGADOR = HUELLA FÍSICA (NO usa localStorage)
+        // Si borran datos de navegación, el ID y la contraseña
+        // siguen siendo EXACTAMENTE los mismos.
+        // ==========================================================
+        function canvasFingerprint() {
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = 220; canvas.height = 40;
+                const ctx = canvas.getContext('2d');
+                ctx.textBaseline = 'top';
+                ctx.font = "16px 'Arial'";
+                ctx.fillStyle = '#f60';
+                ctx.fillRect(0, 0, 100, 20);
+                ctx.fillStyle = '#069';
+                ctx.fillText('CDE-SV-\u00e1\u00e9\u00ed', 2, 2);
+                ctx.fillStyle = 'rgba(102,204,0,0.7)';
+                ctx.fillText('CDE-SV-\u00e1\u00e9\u00ed', 4, 8);
+                return canvas.toDataURL().slice(-80);
+            } catch (e) { return 'sin-canvas'; }
+        }
+
+        function calcularIdNavegador() {
+            const huella = [
+                navigator.userAgent,
+                navigator.platform || '',
+                navigator.language || '',
+                (Intl.DateTimeFormat().resolvedOptions().timeZone || ''),
+                screen.width + 'x' + screen.height + 'x' + screen.colorDepth,
+                String(navigator.hardwareConcurrency || 0),
+                canvasFingerprint()
+            ].join('||');
+            const hash = sha256(encodeURIComponent(huella));
+            return String(parseInt(hash.slice(0, 8), 16));
+        }
+
+        // ==========================================================
+        // SESIÓN Y BLOQUEO (clave propia de este proyecto)
+        // ==========================================================
+        const KEY_ACCESO = 'liquidacion_acceso'; // separada de 'compras_acceso'
+        const contenidoApp = document.getElementById('contenidoApp');
+
+        window.showToast = (msg, type = 'success') => {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = msg;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 4500);
+        };
+
+        function bloquearApp() {
+            contenidoApp.setAttribute('inert', '');   // bloquea clic, teclado y tabulación
+            contenidoApp.classList.add('bloqueado');  // respaldo visual
+        }
+
+        function desbloquearApp() {
+            contenidoApp.removeAttribute('inert');
+            contenidoApp.classList.remove('bloqueado');
+        }
+
+        window.mostrarModalAcceso = () => {
+            document.getElementById('idNavegadorMostrado').textContent = calcularIdNavegador();
+            document.getElementById('modalAcceso').classList.add('active');
+            document.getElementById('inputContrasena').focus();
+        };
+
+        window.intentarAcceso = () => {
+            const ingresada = (document.getElementById('inputContrasena').value || '').trim();
+            if (ingresada === calcularContrasena(calcularIdNavegador())) {
+                localStorage.setItem(KEY_ACCESO, 'true');
+                document.getElementById('modalAcceso').classList.remove('active');
+                showToast('Acceso autorizado. No se volverá a pedir en este navegador.', 'success');
+                desbloquearApp();
+            } else {
+                showToast('Contraseña incorrecta.', 'error');
+                document.getElementById('inputContrasena').value = '';
+                document.getElementById('inputContrasena').focus();
+            }
+        };
+
+        document.getElementById('inputContrasena').addEventListener('keydown', e => {
+            if (e.key === 'Enter') intentarAcceso();
+        });
+
+        // ==========================================================
+        // UTILIDADES DE LA APLICACIÓN (sin cambios)
+        // ==========================================================
         function numeroALetras(num) {
-            // Convertimos a número flotante y fijamos a 2 decimales para evitar problemas de redondeo
             const numeroFlotante = parseFloat(num);
             if (isNaN(numeroFlotante)) return '';
 
             const entero = Math.floor(numeroFlotante);
-            // Extraemos los dos dígitos de los centavos
             const centavos = Math.round((numeroFlotante - entero) * 100).toString().padStart(2, '0');
 
             if (entero === 0 && centavos === '00') return 'CERO CON 00/100';
@@ -147,46 +807,86 @@
                 return (millones === 1 ? 'un millón' : traducir(millones) + ' millones') + (resto ? ' ' + traducir(resto) : '');
             }
 
-            // Traducimos la parte entera (si es 0, escribimos 'cero')
             const textoEntero = entero === 0 ? 'cero' : traducir(entero);
-
-            // Armamos la cadena final uniendo el entero, el conector y la fracción de centavos
             const resultadoCompleto = `${textoEntero} con ${centavos}/100`;
-
-            // Limpiamos espacios dobles y pasamos a MAYÚSCULAS
             return resultadoCompleto.trim().replace(/\s+/g, ' ').toUpperCase();
         };
+
         function formatoFecha(fecha) {
             if (fecha === '') {
                 return '';
-            }
-            else {
+            } else {
                 let nuevaFecha = fecha.split('-');
                 return `${nuevaFecha[2]}-${nuevaFecha[1]}-${nuevaFecha[0]}`;
             }
-
         };
 
+        const valor = id => (document.getElementById(id).value || '').trim();
+        const numeroDe = id => parseFloat(valor(id)) || 0;
+        const sumaClase = clase => {
+            let suma = 0;
+            document.querySelectorAll('.' + clase).forEach(input => {
+                suma += parseFloat(input.value) || 0;
+            });
+            return suma;
+        };
+        const formatoDinero = id => { const x = numeroDe(id); return x ? `$${x.toFixed(2)}` : ''; };
+        const formatoNumero = id => { const x = numeroDe(id); return x ? x.toFixed(2) : ''; };
+        const oBlanco = (v, respaldo) => (v !== '' ? v : respaldo);
+        const guiones = cant => '_'.repeat(cant);
+
+        // ============ TOTAL RECIBIDO ============
         const montos = document.querySelectorAll('.sumar');
-        // 1. CORRECCIÓN: Guarda el elemento completo, no su .value inicial
         const resultado = document.getElementById('total');
 
         function calcularTotal() {
-            let suma = 0;
-            montos.forEach(input => {
-                // 2. CORRECCIÓN: Usa 'input.value' (la variable del bucle), no 'montos.value'
-                suma += parseFloat(input.value) || 0;
-            });
-            // 3. CORRECCIÓN: Usa comillas invertidas `` y el símbolo \$ para las variables
-            resultado.value = `$${suma.toFixed(2)}`;
+            resultado.value = `$${sumaClase('sumar').toFixed(2)}`;
+            recalcularGastos();
         }
 
-        montos.forEach(input => {
-            input.addEventListener('input', calcularTotal);
+        montos.forEach(input => input.addEventListener('input', calcularTotal));
+
+        // ============ TOTALES DE GASTOS POR RUBRO ============
+        function mostrarDinero(elemento, valorNum) {
+            elemento.value = valorNum !== 0 ? `$${valorNum.toFixed(2)}` : '';
+        }
+
+        function recalcularGastos() {
+            const rubro1 = sumaClase('rubro1');
+            const rubro2 = sumaClase('rubro2');
+            const totalInvertido = rubro1 + rubro2;
+            const totalRecibido = sumaClase('sumar');
+
+            mostrarDinero(document.getElementById('totalRubro1'), rubro1);
+            mostrarDinero(document.getElementById('totalRubro2'), rubro2);
+            mostrarDinero(document.getElementById('totalInvertidoTodos'), totalInvertido);
+            mostrarDinero(document.getElementById('saldo'), totalRecibido - totalInvertido);
+        }
+
+        document.querySelectorAll('.rubro1, .rubro2').forEach(input => {
+            input.addEventListener('input', recalcularGastos);
         });
 
+        // ============ POBLACIÓN BENEFICIADA ============
+        function recalcularPoblacion() {
+            const total = numeroDe('ninos') + numeroDe('ninas');
+            document.getElementById('totalBeneficiados').value = total !== 0 ? total : '';
+        }
+        ['ninos', 'ninas'].forEach(id => {
+            document.getElementById(id).addEventListener('input', recalcularPoblacion);
+        });
 
-
+        // ==========================================================
+        // ARRANQUE CON PUERTA DE ACCESO
+        // ==========================================================
+        window.addEventListener('load', () => {
+            if (localStorage.getItem(KEY_ACCESO) === 'true') {
+                desbloquearApp(); // ya autorizado: no se vuelve a pedir la contraseña
+            } else {
+                bloquearApp();
+                mostrarModalAcceso();
+            }
+        });
     </script>
 
     <script>
@@ -196,7 +896,6 @@
         }
 
         // === 1. LOS PUENTES (FUNCIONES DE CONVERSIÓN) ===
-
         async function vincularFuenteLocal(nombreVirtual, rutaLocal) {
             const respuesta = await fetch(rutaLocal);
             if (!respuesta.ok) throw new Error(`No se encontró la fuente: ${rutaLocal}`);
@@ -204,7 +903,7 @@
             return new Promise((resolve, reject) => {
                 const lector = new FileReader();
                 lector.onloadend = () => {
-                    pdfMake.vfs[nombreVirtual] = lector.result.split(',')[1]; // base64 puro
+                    pdfMake.vfs[nombreVirtual] = lector.result.split(',')[1];
                     resolve();
                 };
                 lector.onerror = reject;
@@ -218,27 +917,30 @@
             const blob = await respuesta.blob();
             return new Promise((resolve, reject) => {
                 const lector = new FileReader();
-                lector.onloadend = () => resolve(lector.result); // DataURL completo (data:image/...)
+                lector.onloadend = () => resolve(lector.result);
                 lector.onerror = reject;
                 lector.readAsDataURL(blob);
             });
         }
 
-        // === 2. EL ORQUESTADOR PRINCIPAL ===
+        // === 2. EL ORQUESTADOR PRINCIPAL (con guarda de sesión) ===
         async function iniciarGeneracionPDF() {
+            if (localStorage.getItem(KEY_ACCESO) !== 'true') {
+                showToast('Ingrese la contraseña para usar el generador.', 'warning');
+                mostrarModalAcceso();
+                return;
+            }
+
             const btn = document.getElementById('btnGenerar');
             btn.disabled = true;
             btn.textContent = 'Generando...';
 
             try {
                 pdfMake.vfs = pdfMake.vfs || {};
-
                 await vincularFuenteLocal('PinyonScript-Regular.ttf', '../fonts/PinyonScript-Regular.ttf');
                 await vincularFuenteLocal('TimesNewRoman-Regular.ttf', '../fonts/times.ttf');
                 const imagenBase64 = await convertirImagenABase64('../img/meducacion.jpeg');
-
                 generarPDF(imagenBase64);
-
             } catch (error) {
                 console.error(error);
                 alert('Error al preparar el PDF: ' + error.message + '\n\n' +
@@ -251,9 +953,8 @@
             }
         }
 
-        // === 3. DISEÑO Y CONSTRUCCIÓN DEL PDF ===
+        // === 3. DISEÑO Y CONSTRUCCIÓN DEL PDF (SIN CAMBIOS) ===
         function generarPDF(imagenBase64) {
-
 
             pdfMake.fonts = {
                 Roboto: {
@@ -276,42 +977,67 @@
                 }
             };
 
+            const totalRecibido = sumaClase('sumar');
+            const totalRubro1Calc = sumaClase('rubro1');
+            const totalRubro2Calc = sumaClase('rubro2');
+            const totalInvertidoCalc = totalRubro1Calc + totalRubro2Calc;
+            const saldoCalc = totalRecibido - totalInvertidoCalc;
+
+            const dinero = x => x ? (x < 0 ? `-$${Math.abs(x).toFixed(2)}` : `$${x.toFixed(2)}`) : '';
+            const num2 = x => x ? x.toFixed(2) : '';
+
+            function crearTablaFirmas(altura) {
+                return {
+                    widths: ['*', '*'],
+                    heights: altura,
+                    body: [
+                        [
+                            { text: oBlanco(valor('nombrePresidente'), guiones(28)) },
+                            { text: 'F:                                                          ', decoration: 'underline', bold: true }
+                        ],
+                        [{ text: 'PRESIDENTE', bold: true }, ''],
+                        [
+                            { text: oBlanco(valor('nombreTesorero'), guiones(28)) },
+                            { text: 'F:                                                          ', decoration: 'underline', bold: true }
+                        ],
+                        [{ text: 'TESORERO', bold: true }, ''],
+                        [
+                            { text: oBlanco(valor('nombreConcejal'), guiones(28)) },
+                            { text: 'F:                                                          ', decoration: 'underline', bold: true }
+                        ],
+                        [{ text: 'CONCEJAL DOCENTE', bold: true }, ''],
+                    ],
+                };
+            }
 
             const docDefinition = {
                 pageMargins: [60, 80, 60, 60],
                 pageSize: 'LETTER',
                 header: {
                     table: {
-                        widths: ['auto', '*'], // Mantienes las 2 columnas: Logo e Información
+                        widths: ['auto', '*'],
                         body: [
                             [
-                                // COLUMNA 1: Tu logo (Sin usar rowSpan que rompe el header)
                                 imagenBase64
                                     ? { image: imagenBase64, width: 125, margin: [15, 10, 0, 0] }
                                     : { text: '[Sin logo]', margin: [15, 15, 0, 0] },
-
-                                // COLUMNA 2: Usamos un bloque contenedor para manejar el espacio vertical libremente
                                 {
                                     stack: [
-                                        // Renglón vacío superior (Equivale a tu fila anterior)
                                         { text: '', height: 10 },
                                         { text: '', height: 10 },
-
-                                        // Tu texto oficial que ahora sí se va a renderizar al 100%
                                         {
                                             text: '\nDirección Departamental de Educación Chalatenango',
                                             font: 'PinyonScript',
                                             fontSize: 22,
-                                            margin: [10, 15, 0, 0] // Ajusta el segundo número para bajar o subir el texto respecto al logo
+                                            margin: [10, 15, 0, 0]
                                         }
                                     ]
                                 },
                             ]
                         ]
                     },
-                    layout: 'noBorders' // Quita los bordes para mantener la estética limpia
+                    layout: 'noBorders'
                 },
-
 
                 content: [
                     {
@@ -319,16 +1045,16 @@
                         bold: true, margin: [0, 0, 0, 12],
                     },
                     {
-                        text: 'PRESUPUESTO ESCOLAR:', fontSize: 11, BOLD: true, alignment: 'center', margin: [0, 0, 0, 12],
+                        text: 'PRESUPUESTO ESCOLAR:', fontSize: 11, bold: true, alignment: 'center', margin: [0, 0, 0, 12],
                     },
                     {
                         text: [
-                            {text: `Rubro: ${document.getElementById('rubro').value}                                                 `},
-                            {text: `Año: ${document.getElementById('anio').value}\n\n`}
+                            { text: `Rubro: ${valor('rubro')}                                                 ` },
+                            { text: `Año: ${valor('anio')}\n\n` }
                         ], fontSize: 11,
                     },
                     {
-                        text: `FUENTE DE FINANCIAMIENTO: ${document.getElementById('fuente').value}`, margin: [20, 0, 0, 12], fontSize: 9,
+                        text: `FUENTE DE FINANCIAMIENTO: ${valor('fuente')}`, margin: [20, 0, 0, 12], fontSize: 9,
                     },
                     {
                         style: 'tablaLista',
@@ -337,19 +1063,19 @@
                             widths: [20, 20, 152, '*'],
                             body: [
                                 ['1. ', { text: 'DATOS DEL ORGANISMO DE ADMINISTRACIÓN ESCOLAR:', colSpan: 3, bold: true }, '', ''],
-                                ['', '1.1', {text: `NOMBRE DEL CENTRO EDUCATIVO:`}, {text: `${document.getElementById('nombreEscuela').value}`, decoration: 'underline'}],
-                                ['', '1.2', 'CODIGO:', {text: `${document.getElementById('codigoEscuela').value}`, decoration: 'underline'}],
-                                ['', '1.3', 'UBICACIÓN:   ', {text: `${document.getElementById('ubicacion').value}`, decoration: 'underline'}],
-                                ['', '1.4', 'NIT DEL ORGANISMO:', {text: `${document.getElementById('nit').value}`, decoration: 'underline'}],
+                                ['', '1.1', `NOMBRE DEL CENTRO EDUCATIVO:`, { text: `${valor('nombreEscuela')}`, decoration: 'underline' }],
+                                ['', '1.2', 'CODIGO:', { text: `${valor('codigoEscuela')}`, decoration: 'underline' }],
+                                ['', '1.3', 'UBICACIÓN:   ', { text: `${valor('ubicacion')}`, decoration: 'underline' }],
+                                ['', '1.4', 'NIT DEL ORGANISMO:', { text: `${valor('nit')}`, decoration: 'underline' }],
                                 ['2.', { text: 'DIRECCIÓN:', colSpan: 3, bold: true }, '', ''],
-                                ['', '2.1', 'DEPARTAMENTO: ', ''],
-                                ['', '2.2', 'MUNICIPIO:', ''],
-                                ['', '2.3', 'CANTÓN: ', ''],
-                                ['', '2.4', 'CASERÍO: ', ''],
+                                ['', '2.1', 'DEPARTAMENTO: ', { text: `${valor('departamento')}`, decoration: 'underline' }],
+                                ['', '2.2', 'MUNICIPIO:', { text: `${valor('municipio')}`, decoration: 'underline' }],
+                                ['', '2.3', 'CANTÓN: ', { text: `${valor('canton')}`, decoration: 'underline' }],
+                                ['', '2.4', 'CASERÍO: ', { text: `${valor('caserio')}`, decoration: 'underline' }],
                                 ['3.', { text: 'DATOS BANCARIOS:', colSpan: 3, bold: true }, '', ''],
-                                ['', '3.1', 'NOMBRE DEL BANCO', ''],
-                                ['', '3.2', 'CUENTA CORRIENTE No:', ''],
-                                ['', '3.3', 'NOMBRE DE LA CUENTA CORRIENTE:', ''],
+                                ['', '3.1', 'NOMBRE DEL BANCO', { text: `${valor('banco')}`, decoration: 'underline' }],
+                                ['', '3.2', 'CUENTA CORRIENTE No:', { text: `${valor('cuentaCorriente')}`, decoration: 'underline' }],
+                                ['', '3.3', 'NOMBRE DE LA CUENTA CORRIENTE:', { text: `${valor('nombreCuenta')}`, decoration: 'underline' }],
                                 ['4.', { text: 'NOMBRES Y FIRMAS AUTORIZADAS EN LA CUENTA CORRIENTE:', colSpan: 3, bold: true }, '', ''],
                             ],
                             heights: 18,
@@ -359,33 +1085,23 @@
                     {
                         style: 'tablaLista',
                         margin: [0, 30, 0, 0],
-                        table: {
-                            widths: ['*', '*'],
-                            body: [
-                                [{ text: '' }, { text: 'F:                                                          ', decoration: 'underline', bold: true, }],
-                                ['PRESIDENTE', ''],
-                                ['', { text: 'F:                                                          ', decoration: 'underline', bold: true, }],
-                                ['TESORERO', ''],
-                                ['', { text: 'F:                                                          ', decoration: 'underline', bold: true, }],
-                                ['CONCEJAL DOCENTE', ''],
-                            ],
-                            heights: 13,
-                        }, layout: 'noBorders'
+                        table: crearTablaFirmas(13),
+                        layout: 'noBorders'
                     },
                     { text: `\n\n\nSELLO`, alignment: `center`, fontSize: 9, pageBreak: 'after', },
 
                     //PAGINA 2
                     {
-                        text: `CHEQUES UTILIZADOS A LA FECHA DE LA ELABORACIÓN DE ESTA LIQUIDACIÓN:  DEL______ N° AL N°______`, fontSize: 9, margin: [0, 0, 0, 10]
+                        text: `CHEQUES UTILIZADOS A LA FECHA DE LA ELABORACIÓN DE ESTA LIQUIDACIÓN:  DEL ${oBlanco(valor('chequeInicio'), guiones(6))} N° AL N° ${oBlanco(valor('chequeFin'), guiones(6))}`, fontSize: 9, margin: [0, 0, 0, 10]
                     },
                     {
-                        text: `FECHA DEL ÚLTIMO CHEQUE UTILIZADO EN ESTA LIQUIDACIÓN: _______`, fontSize: 9, margin: [0, 0, 0, 10]
+                        text: `FECHA DEL ÚLTIMO CHEQUE UTILIZADO EN ESTA LIQUIDACIÓN: ${oBlanco(formatoFecha(valor('fechaUltimoCheque')), guiones(9))}`, fontSize: 9, margin: [0, 0, 0, 10]
                     },
                     {
-                        text: `FONDOS TRANSFERIDOS, RECIBIDOS, INVERTIDOS Y LIQUIDADOS $_______`, fontSize: 9, margin: [0, 0, 0, 10]
+                        text: `FONDOS TRANSFERIDOS, RECIBIDOS, INVERTIDOS Y LIQUIDADOS ${dinero(totalRecibido) || `$${guiones(7)}`}`, fontSize: 9, margin: [0, 0, 0, 10]
                     },
                     {
-                        text: `CANTIDAD EN LETRAS: _________________________________\n\n`, fontSize: 9,
+                        text: `CANTIDAD EN LETRAS: ${totalRecibido > 0 ? numeroALetras(totalRecibido) : guiones(41)}\n\n`, fontSize: 9,
                     },
                     {
                         fontSize: 9,
@@ -393,29 +1109,29 @@
                             headerRows: 1,
                             widths: [35, '*', '*', 85, 85],
                             body: [
-                                [{ text: 'N DE CUENTA', alignment: 'center' }, { text: 'CONCEPTO', alignment: 'center', colSpan: 2, }, '', 'VALOR PARCIAL', { text: 'VALOR TOTAL', alignment: 'right' }],
-                                ['', { text: 'MONTO RECIBIDO Y FECHA:', bold: true, colSpan: 2, }, '', '', ''],
-                                ['', `$${document.getElementById('monto1').value}`, { text: `FECHA: ${formatoFecha(document.getElementById('fechaMonto1').value || '')}`, bold: true }, '', ''],
-                                ['', `$${document.getElementById('monto2').value}`, { text: `FECHA: ${formatoFecha(document.getElementById('fechaMonto2').value || '')}`, bold: true }, '', ''],
-                                ['', `$${document.getElementById('monto3').value}`, { text: `FECHA: ${formatoFecha(document.getElementById('fechaMonto3').value || '')}`, bold: true }, '', ''],
-                                ['', `$${document.getElementById('monto4').value}`, { text: `FECHA: ${formatoFecha(document.getElementById('fechaMonto4').value || '')}`, bold: true }, '', ''],
-                                ['', `$${document.getElementById('monto5').value}`, { text: `FECHA: ${formatoFecha(document.getElementById('fechaMonto5').value || '')}`, bold: true }, '', ''],
-                                ['', `$${document.getElementById('monto6').value}`, { text: `FECHA: ${formatoFecha(document.getElementById('fechaMonto6').value || '')}`, bold: true }, '', {text: `${document.getElementById('total').value}`}],
-                                ['', { text: `MENOS RUBROS DE OPERACIÓN:`, colSpan: 2, bold: true }, '', '', ''],
-                                ['', { text: `TOTAL MONTO INVERTIDO:`, colSpan: 2, bold: true }, '', '', ''],
-                                ['', { text: `RUBRO Nº 1-GASTOS DE OPERACIÓN:`, colSpan: 2, bold: true }, '', '', ''],
-                                ['1.1', { text: `MATERIAL EDUCATIVO.`, colSpan: 2, }, '', '', ''],
-                                ['1.2', { text: `OPERACIÓN LOGÍSTICA DEL CENTRO.`, colSpan: 2, }, '', '', ''],
-                                ['1.3', { text: `ALIMENTACIÓN ESCOLAR.`, colSpan: 2, }, '', '', ''],
-                                ['1.5', { text: `REMUNERACIONES.`, colSpan: 2, }, '', '', ''],
-                                ['1.6', { text: `GASTOS DE GRADUACIÓN.`, colSpan: 2, }, '', '', ''],
-                                ['', { text: `TOTAL INVERTIDO EN RUBRO Nº 1`, colSpan: 2, alignment: 'right', bold: true }, '', '', ''],
-                                ['', { text: `RUBRO Nº 2- INVERSIONES.`, colSpan: 2, bold: true }, '', '', ''],
-                                ['2.1', { text: `ADQUISICIÓN DE EQUIPO.`, colSpan: 2, }, '', '', ''],
-                                ['2.2', { text: `ADQUISICIÓN DE MOBILIARIO.`, colSpan: 2, }, '', '', ''],
-                                ['', { text: `TOTAL INVERTIDO EN RUBRO Nº 2`, colSpan: 2, alignment: 'right', bold: true }, '', '', ''],
-                                ['', { text: `TOTAL INVERTIDO EN TODOS LOS RUBROS.`, colSpan: 2, }, '', '', ''],
-                                ['', { text: `SALDO: MONTO RECIBIDO MENOS MONTO INVERTIDO.`, colSpan: 2, }, '', '', ''],
+                                [{ text: 'N DE CUENTA', alignment: 'center' }, { text: 'CONCEPTO', alignment: 'center', colSpan: 2 }, '', 'VALOR PARCIAL', { text: 'VALOR TOTAL', alignment: 'right' }],
+                                ['', { text: 'MONTO RECIBIDO Y FECHA:', bold: true, colSpan: 2 }, '', '', ''],
+                                ['', `$${valor('monto1')}`, { text: `FECHA: ${formatoFecha(valor('fechaMonto1') || '')}`, bold: true }, '', ''],
+                                ['', `$${valor('monto2')}`, { text: `FECHA: ${formatoFecha(valor('fechaMonto2') || '')}`, bold: true }, '', ''],
+                                ['', `$${valor('monto3')}`, { text: `FECHA: ${formatoFecha(valor('fechaMonto3') || '')}`, bold: true }, '', ''],
+                                ['', `$${valor('monto4')}`, { text: `FECHA: ${formatoFecha(valor('fechaMonto4') || '')}`, bold: true }, '', ''],
+                                ['', `$${valor('monto5')}`, { text: `FECHA: ${formatoFecha(valor('fechaMonto5') || '')}`, bold: true }, '', ''],
+                                ['', `$${valor('monto6')}`, { text: `FECHA: ${formatoFecha(valor('fechaMonto6') || '')}`, bold: true }, '', { text: dinero(totalRecibido), alignment: 'right', bold: true }],
+                                ['', { text: 'MENOS RUBROS DE OPERACIÓN:', colSpan: 2, bold: true }, '', '', { text: formatoDinero('menosRubros'), alignment: 'right' }],
+                                ['', { text: 'TOTAL MONTO INVERTIDO:', colSpan: 2, bold: true }, '', '', { text: formatoDinero('totalMontoInvertido'), alignment: 'right' }],
+                                ['', { text: 'RUBRO Nº 1-GASTOS DE OPERACIÓN:', colSpan: 2, bold: true }, '', '', ''],
+                                ['1.1', { text: 'MATERIAL EDUCATIVO.', colSpan: 2 }, '', { text: formatoDinero('inv11'), alignment: 'right' }, ''],
+                                ['1.2', { text: 'OPERACIÓN LOGÍSTICA DEL CENTRO.', colSpan: 2 }, '', { text: formatoDinero('inv12'), alignment: 'right' }, ''],
+                                ['1.3', { text: 'ALIMENTACIÓN ESCOLAR.', colSpan: 2 }, '', { text: formatoDinero('inv13'), alignment: 'right' }, ''],
+                                ['1.5', { text: 'REMUNERACIONES.', colSpan: 2 }, '', { text: formatoDinero('inv15'), alignment: 'right' }, ''],
+                                ['1.6', { text: 'GASTOS DE GRADUACIÓN.', colSpan: 2 }, '', { text: formatoDinero('inv16'), alignment: 'right' }, ''],
+                                ['', { text: 'TOTAL INVERTIDO EN RUBRO Nº 1', colSpan: 2, alignment: 'right', bold: true }, '', '', { text: dinero(totalRubro1Calc), alignment: 'right', bold: true }],
+                                ['', { text: 'RUBRO Nº 2- INVERSIONES.', colSpan: 2, bold: true }, '', '', ''],
+                                ['2.1', { text: 'ADQUISICIÓN DE EQUIPO.', colSpan: 2 }, '', { text: formatoDinero('inv21'), alignment: 'right' }, ''],
+                                ['2.2', { text: 'ADQUISICIÓN DE MOBILIARIO.', colSpan: 2 }, '', { text: formatoDinero('inv22'), alignment: 'right' }, ''],
+                                ['', { text: 'TOTAL INVERTIDO EN RUBRO Nº 2', colSpan: 2, alignment: 'right', bold: true }, '', '', { text: dinero(totalRubro2Calc), alignment: 'right', bold: true }],
+                                ['', { text: 'TOTAL INVERTIDO EN TODOS LOS RUBROS.', colSpan: 2 }, '', '', { text: dinero(totalInvertidoCalc), alignment: 'right' }],
+                                ['', { text: 'SALDO: MONTO RECIBIDO MENOS MONTO INVERTIDO.', colSpan: 2 }, '', '', { text: dinero(saldoCalc), alignment: 'right' }],
                             ], heights: 10,
                         }
                     },
@@ -423,46 +1139,36 @@
                     {
                         fontSize: 9,
                         margin: [0, 5, 0, 0],
-                        table: {
-                            widths: ['*', '*'],
-                            body: [
-                                [{ text: '' }, { text: 'F:                                                          ', decoration: 'underline', bold: true, }],
-                                ['PRESIDENTE', ''],
-                                ['', { text: 'F:                                                          ', decoration: 'underline', bold: true, }],
-                                ['TESORERO', ''],
-                                ['', { text: 'F:                                                          ', decoration: 'underline', bold: true, }],
-                                ['CONCEJAL DOCENTE', ''],
-                            ],
-                            heights: 10,
-                        }, layout: 'noBorders'
+                        table: crearTablaFirmas(10),
+                        layout: 'noBorders'
                     },
                     { text: `\n\n\nSELLO`, alignment: `center`, fontSize: 9, pageBreak: 'after', pageOrientation: 'landscape' },
 
                     //PAGINA 3
-                    { text: 'DIRECCCIÓN DEPARTAMENTAL DE EDUCACIÓN DE CHALATENANGO \nCUADRO RESUMEN DE GASTOS\n\n', alignment: 'center', bold: true, lineHeight: 1.3 },
-                    { text: `RUBRO: _______________________________________________________________________________________, AÑO: ______________________________\n\n\n`, alignment: 'center' },
+                    { text: 'DIRECCIÓN DEPARTAMENTAL DE EDUCACIÓN DE CHALATENANGO \nCUADRO RESUMEN DE GASTOS\n\n', alignment: 'center', bold: true, lineHeight: 1.3 },
+                    { text: `RUBRO: ${oBlanco(valor('rubro'), guiones(88))}, AÑO: ${oBlanco(valor('anio'), guiones(30))}\n\n\n`, alignment: 'center' },
                     {
                         fontSize: 9,
                         table: {
                             headerRows: 1,
                             widths: [35, 40, '*', 47, 35, 35, 35, 35, 35, 35, 35, 40],
                             body: [
-                                [{ text: 'NO. CHEQUE', rowSpan: 5, alignment: 'center', margin: [0, 30, 0, 0] }, { text: 'FECHA', rowSpan: 5, alignment: 'center', margin: [0, 30, 0, 0] }, { text: 'CONCEPTO', rowSpan: 5, alignment: 'center', margin: [0, 30, 0, 0] }, { text: 'No. FACTURA O CHEQUE', rowSpan: 5, alignment: 'center', margin: [0, 30, 0, 0] }, { text: 'COMPONENTE DE OPERACIÓN Y FUNCIONAMIENTOS, PROYECTOS Y OTROS.', colSpan: 7, alignment: 'center', margin: [0, 0, 0, 0], bold: true }, '', '', '', '', '', '', { text: 'TOTAL', rowSpan: 5, alignment: 'center', margin: [0, 30, 0, 0], fontSize: 13, bold: true },],
-                                ['', '', '', '', { text: 'NO.1 GASTOS CORRIENTES', colSpan: 5, alignment: 'center', margin: [0, 0, 0, 0], bold: true }, '', '', '', '', { text: '', colSpan: 2, alignment: 'center', margin: [0, 0, 0, 0] }, '', ''],
-                                ['', '', '', '', { text: '1.1', alignment: 'center', bold: true, fontSize: 8 }, { text: '1.2', alignment: 'center', bold: true, fontSize: 8 }, { text: '1.3', alignment: 'center', bold: true, fontSize: 8 }, { text: '1.5', alignment: 'center', bold: true, fontSize: 8 }, { text: '1.6', alignment: 'center', bold: true, fontSize: 8 }, { text: '2.1', alignment: 'center', bold: true, fontSize: 8 }, { text: '2.2', alignment: 'center', bold: true, fontSize: 8 }, '',],
-                                ['', '', '', '', { text: 'Material Educativo', alignment: 'center', fontSize: 7 }, { text: 'Operación Logística', alignment: 'center', fontSize: 7 }, { text: 'Alimentación Escolar', alignment: 'center', fontSize: 7 }, { text: 'Remuneraciones', alignment: 'center', fontSize: 7 }, { text: 'Gastos de Graduación', alignment: 'center', fontSize: 7 }, { text: 'Adq. de Equipo', alignment: 'center', fontSize: 7 }, { text: 'Adq. de Mobiliario', alignment: 'center', fontSize: 7 }, '',],
-                                ['', '', '', '', '', '', '', '', '', '', '', '',],
-                                ['', '', '', '', '', '', '', '', '', '', '', '',],
-                                ['', '', '', '', '', '', '', '', '', '', '', '',],
-                                ['', '', '', '', '', '', '', '', '', '', '', '',],
-                                ['', '', '', '', '', '', '', '', '', '', '', '',],
-                                ['', '', '', '', '', '', '', '', '', '', '', '',],
-                                ['', '', '', '', '', '', '', '', '', '', '', '',],
-                                ['', '', '', '', '', '', '', '', '', '', '', '',],
-                                ['', '', '', '', '', '', '', '', '', '', '', '',],
-                                [{ text: 'TRANSFERENCIA MINEDUCYT TOTAL POR COMPONENTE', colSpan: 11, }, '', '', '', '', '', '', '', '', '', '', '',],
-                                [{ text: 'TOTAL POR COMPONENTE', colSpan: 4, }, '', '', '', '', '', '', '', '', '', '', '',],
-                                [{ text: 'REINTEGRO', colSpan: 11, }, '', '', '', '', '', '', '', '', '', '', '',],
+                                [{ text: 'NO. CHEQUE', rowSpan: 5, alignment: 'center', margin: [0, 30, 0, 0] }, { text: 'FECHA', rowSpan: 5, alignment: 'center', margin: [0, 30, 0, 0] }, { text: 'CONCEPTO', rowSpan: 5, alignment: 'center', margin: [0, 30, 0, 0] }, { text: 'No. FACTURA O CHEQUE', rowSpan: 5, alignment: 'center', margin: [0, 30, 0, 0] }, { text: 'COMPONENTE DE OPERACIÓN Y FUNCIONAMIENTOS, PROYECTOS Y OTROS.', colSpan: 7, alignment: 'center', bold: true }, '', '', '', '', '', '', { text: 'TOTAL', rowSpan: 5, alignment: 'center', margin: [0, 30, 0, 0], fontSize: 13, bold: true }],
+                                ['', '', '', '', { text: 'NO.1 GASTOS CORRIENTES', colSpan: 5, alignment: 'center', bold: true }, '', '', '', '', { text: '', colSpan: 2, alignment: 'center' }, '', ''],
+                                ['', '', '', '', { text: '1.1', alignment: 'center', bold: true, fontSize: 8 }, { text: '1.2', alignment: 'center', bold: true, fontSize: 8 }, { text: '1.3', alignment: 'center', bold: true, fontSize: 8 }, { text: '1.5', alignment: 'center', bold: true, fontSize: 8 }, { text: '1.6', alignment: 'center', bold: true, fontSize: 8 }, { text: '2.1', alignment: 'center', bold: true, fontSize: 8 }, { text: '2.2', alignment: 'center', bold: true, fontSize: 8 }, ''],
+                                ['', '', '', '', { text: 'Material Educativo', alignment: 'center', fontSize: 7 }, { text: 'Operación Logística', alignment: 'center', fontSize: 7 }, { text: 'Alimentación Escolar', alignment: 'center', fontSize: 7 }, { text: 'Remuneraciones', alignment: 'center', fontSize: 7 }, { text: 'Gastos de Graduación', alignment: 'center', fontSize: 7 }, { text: 'Adq. de Equipo', alignment: 'center', fontSize: 7 }, { text: 'Adq. de Mobiliario', alignment: 'center', fontSize: 7 }, ''],
+                                ['', '', '', '', '', '', '', '', '', '', '', ''],
+                                ['', '', '', '', '', '', '', '', '', '', '', ''],
+                                ['', '', '', '', '', '', '', '', '', '', '', ''],
+                                ['', '', '', '', '', '', '', '', '', '', '', ''],
+                                ['', '', '', '', '', '', '', '', '', '', '', ''],
+                                ['', '', '', '', '', '', '', '', '', '', '', ''],
+                                ['', '', '', '', '', '', '', '', '', '', '', ''],
+                                ['', '', '', '', '', '', '', '', '', '', '', ''],
+                                ['', '', '', '', '', '', '', '', '', '', '', ''],
+                                [{ text: 'TRANSFERENCIA MINEDUCYT TOTAL POR COMPONENTE', colSpan: 11 }, '', '', '', '', '', '', '', '', '', '', { text: num2(totalRecibido), alignment: 'center', bold: true }],
+                                [{ text: 'TOTAL POR COMPONENTE', colSpan: 4 }, '', '', '', { text: formatoNumero('inv11'), alignment: 'center' }, { text: formatoNumero('inv12'), alignment: 'center' }, { text: formatoNumero('inv13'), alignment: 'center' }, { text: formatoNumero('inv15'), alignment: 'center' }, { text: formatoNumero('inv16'), alignment: 'center' }, { text: formatoNumero('inv21'), alignment: 'center' }, { text: formatoNumero('inv22'), alignment: 'center' }, { text: num2(totalInvertidoCalc), alignment: 'center', bold: true }],
+                                [{ text: 'REINTEGRO', colSpan: 11 }, '', '', '', '', '', '', '', '', '', '', ''],
                             ],
                             heights: 12,
                         }
@@ -472,71 +1178,81 @@
                     //PAGINA 4
                     {
                         table: {
-                            style: 'tablaLista',
                             widths: ['*'],
                             body: [
                                 [{
                                     text: [
                                         { text: '\n5. PARA USOS DE LA DIRECCIÓN DEPARTAMENTAL DE EDUCACION:\n\n' },
-                                        { text: `REEMBOLSO             $_______________ NO. DE CHEQUE _________________________ FECHA ________________.\n\n` },
-                                        { text: `REEMBOLSO             $_______________ NO. DE CHEQUE _________________________ FECHA ________________.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n` }
+                                        { text: `REEMBOLSO             ${formatoDinero('reembolso1') || `$${guiones(15)}`} NO. DE CHEQUE ${oBlanco(valor('chequeReembolso1'), guiones(25))} FECHA ${oBlanco(formatoFecha(valor('fechaReembolso1')), guiones(16))}.\n\n` },
+                                        { text: `REEMBOLSO             ${formatoDinero('reembolso2') || `$${guiones(15)}`} NO. DE CHEQUE ${oBlanco(valor('chequeReembolso2'), guiones(25))} FECHA ${oBlanco(formatoFecha(valor('fechaReembolso2')), guiones(16))}.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n` }
                                     ], margin: [30, 0, 30, 0]
                                 }],
                             ],
                         }
                     },
                     { text: 'OBSERVACIONES:', bold: true, margin: [40, 20, 40, 10], fontSize: 9 },
+                    ...(valor('observaciones') ? [{ text: valor('observaciones'), margin: [40, 0, 40, 10], fontSize: 9 }] : []),
                     {
                         style: 'cortarTabla',
                         table: {
-                            widths: ['*'], // Ocupa el 100% del ancho disponible
+                            widths: ['*'],
                             body: [
-                                [{ text: '', margin: [0, 2] }], // Primera línea de escritura
-                                [{ text: '', margin: [0, 8] }], // Segunda línea
-                                [{ text: '', margin: [0, 8] }], // Tercera línea
-                                [{ text: '', margin: [0, 8] }]  // Cuarta línea
+                                [{ text: '', margin: [0, 2] }],
+                                [{ text: '', margin: [0, 8] }],
+                                [{ text: '', margin: [0, 8] }],
+                                [{ text: '', margin: [0, 8] }]
                             ],
                         },
                         layout: {
-                            // Oculta los bordes verticales y el superior, solo deja las líneas horizontales
                             vLineWidth: function () { return 0; },
-                            hLineWidth: function (i) { return i === 0 ? 0 : 1; }, // No dibuja el borde de arriba de la tabla
-                            hLineColor: function () { return '#000000'; } // Color gris para que no sea tan oscuro
+                            hLineWidth: function (i) { return i === 0 ? 0 : 1; },
+                            hLineColor: function () { return '#000000'; }
                         },
                     },
                     { text: '\n\nDECLARAMOS BAJO JURAMENTO QUE LOS DATOS EN LA PRESENTE LIQUIDACIÓN SON CIFRAS REALES, POR LO QUE ASUMIMOS LA RESPONSABILIDAD CORRESPONDIENTE.', style: 'cortarTabla', bold: true, fontSize: 9 },
-                    { text: `\nRESPONSABLE: __________________________________________          F: ________________________   SELLO\n\nPRESIDENTE DEL ORGANISMO\n\n\n`, style: 'cortarTabla', },
+                    { text: `\nRESPONSABLE: ${oBlanco(valor('nombrePresidente'), guiones(40))}          F: ________________________   SELLO\n\nPRESIDENTE DEL ORGANISMO\n\n\n`, style: 'cortarTabla', },
                     { text: '\n6. RECEPCIÓN DE FORMULARIO DE AUTOLIQUIDACIÓN', bold: true },
                     {
                         text: [
-                            { text: '\nRUBRO LIQUIDADO:', bold: true }, { text: '__________________________________________', }, { text: '   AÑO: ', bold: true, }, { text: '________' }, { text: '  MONTO:', bold: true, }, { text: '$___________' }
+                            { text: '\nRUBRO LIQUIDADO:', bold: true }, { text: oBlanco(valor('rubro'), guiones(42)), }, { text: '   AÑO: ', bold: true, }, { text: oBlanco(valor('anio'), guiones(8)) }, { text: '  MONTO:', bold: true, }, { text: totalRecibido > 0 ? `$${totalRecibido.toFixed(2)}` : '$___________' }
                         ], style: 'cortarTabla'
                     },
                     { text: '\n\n\nRECIBIDA POR:___________________________________________               SELLO DDE\n\nNOMBRE Y FIRMA DEL TECNICO DE LA DDE', style: 'cortarTabla', },
-                    { text: `\n\nFECHA DE LIQUIDACIÓN:____________________________________________ `, style: 'cortarTabla', pageBreak: 'after' },
+                    { text: `\n\nFECHA DE LIQUIDACIÓN: ${oBlanco(formatoFecha(valor('fechaLiquidacion')), guiones(44))} `, style: 'cortarTabla', pageBreak: 'after' },
+
                     //PAGINA 5
                     { text: 'INFORME DE RENDICIÓN DE CUENTAS', alignment: 'center', fontSize: 14, bold: true },
-                    { text: `\nCENTRO ESCOLAR: \nMUNICIPIO:                    DEPARTAMENTO: \nCÓDIGO:`, fontSize: 12, lineHeight: 1.5 },
+                    { text: `\nCENTRO ESCOLAR: ${valor('nombreEscuela')}\nMUNICIPIO: ${valor('municipio')}                    DEPARTAMENTO: ${valor('departamento')}\nCÓDIGO: ${valor('codigoEscuela')}`, fontSize: 12, lineHeight: 1.5 },
                     { text: '\nDATOS GENERALES: ', fontSize: 12, bold: true, decoration: 'underline', },
-                    { text: `\nMonto Recibido $                       Nombre del Banco \n\nNúmero de Cuenta:`, fontSize: 12 },
-                    { text: '\nBENEFICIOS ALCANZADOS: ', fontSize: 12, bold: true, decoration: 'underline', },
-                    { text: '\nCUMPLIMIENTO DE OBJETIVOS Y METAS: ', fontSize: 12, bold: true, decoration: 'underline', },
+                    { text: `\nMonto Recibido ${dinero(totalRecibido)}                       Nombre del Banco: ${valor('banco')} \n\nNúmero de Cuenta: ${valor('cuentaCorriente')}`, fontSize: 12 },
+                    {
+                        text: [
+                            { text: '\nBENEFICIOS ALCANZADOS: ', fontSize: 12, bold: true, decoration: 'underline', },
+                            { text: valor('beneficios'), fontSize: 12 }
+                        ]
+                    },
+                    {
+                        text: [
+                            { text: '\nCUMPLIMIENTO DE OBJETIVOS Y METAS: ', fontSize: 12, bold: true, decoration: 'underline', },
+                            { text: valor('objetivos'), fontSize: 12 }
+                        ]
+                    },
                     { text: '\nPOBLACIÓN BENEFICIADA ', fontSize: 12, bold: true, decoration: 'underline', },
-                    { text: `\nNIÑOS                       NIÑAS                        TOTAL\n\nMAESTROS:                       FAMILIAS:`, fontSize: 11 },
-                    { text: `\nY no habiendo más que hacer constar firmamos la presente Acta de Rendición de Cuentas a los días del mes de  de \n\n\n`, fontSize: 11 },
+                    { text: `\nNIÑOS ${oBlanco(valor('ninos'), guiones(8))}            NIÑAS ${oBlanco(valor('ninas'), guiones(8))}            TOTAL ${oBlanco(valor('totalBeneficiados'), guiones(8))}\n\nMAESTROS: ${oBlanco(valor('maestros'), guiones(8))}            FAMILIAS: ${oBlanco(valor('familias'), guiones(8))}`, fontSize: 11 },
+                    { text: `\nY no habiendo más que hacer constar firmamos la presente Acta de Rendición de Cuentas a los ${oBlanco(valor('diaActa'), guiones(4))} días del mes de ${oBlanco(valor('mesActa'), guiones(10))} de ${oBlanco(valor('anioActa'), guiones(4))}\n\n\n`, fontSize: 11 },
                     {
                         table: {
                             headerRows: 1,
                             widths: ['*', '*', '*', '*', '*'],
                             body: [
-                                [{ text: 'F: _______________________________', colSpan: 2, }, '', '', { text: 'F: _______________________________', colSpan: 2, }, ''],
-                                [{ text: `Nombre: `, colSpan: 2, }, '', '', { text: `Nombre: `, colSpan: 2, }, ''],
+                                [{ text: 'F: _______________________________', colSpan: 2 }, '', '', { text: 'F: _______________________________', colSpan: 2 }, ''],
+                                [{ text: `Nombre: ${valor('nombrePresidente')}`, colSpan: 2 }, '', '', { text: `Nombre: ${valor('nombreTesorero')}`, colSpan: 2 }, ''],
                                 [{ text: 'PRESIDENTE', colSpan: 2, alignment: 'center' }, '', '', { text: 'TESORERO/A', colSpan: 2, alignment: 'center' }, ''],
                                 ['', '', { text: 'Sello', alignment: 'center' }, '', ''],
                                 ['', '', '', '', ''],
                                 ['', '', '', '', ''],
                                 ['', { text: 'F: _______________________________', colSpan: 3, alignment: 'center' }, '', '', ''],
-                                ['', { text: `Nombre: `, colSpan: 3, alignment: 'center' }, '', '', ''],
+                                ['', { text: `Nombre: ${valor('nombreConcejal')}`, colSpan: 3, alignment: 'center' }, '', '', ''],
                                 ['', { text: 'CONCEJAL DE MAESTROS', colSpan: 3, alignment: 'center' }, '', '', ''],
                             ], heights: 10,
                         },
